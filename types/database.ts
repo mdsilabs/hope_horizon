@@ -93,7 +93,10 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["schools"]["Row"]> & { name: string };
         Update: Partial<Database["public"]["Tables"]["schools"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "schools_current_session_fk"; columns: ["current_academic_session_id"]; referencedRelation: "academic_sessions"; referencedColumns: ["id"] },
+          { foreignKeyName: "schools_current_term_fk"; columns: ["current_term_id"]; referencedRelation: "terms"; referencedColumns: ["id"] },
+        ];
       };
       users: {
         Row: {
@@ -118,7 +121,9 @@ export interface Database {
           role: UserRole;
         };
         Update: Partial<Database["public"]["Tables"]["users"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "users_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+        ];
       };
       academic_sessions: {
         Row: {
@@ -139,7 +144,9 @@ export interface Database {
           end_date: string;
         };
         Update: Partial<Database["public"]["Tables"]["academic_sessions"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "academic_sessions_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+        ];
       };
       terms: {
         Row: {
@@ -165,7 +172,10 @@ export interface Database {
           end_date: string;
         };
         Update: Partial<Database["public"]["Tables"]["terms"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "terms_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "terms_academic_session_id_fkey"; columns: ["academic_session_id"]; referencedRelation: "academic_sessions"; referencedColumns: ["id"] },
+        ];
       };
       classes: {
         Row: {
@@ -186,7 +196,10 @@ export interface Database {
           level: SchoolLevel;
         };
         Update: Partial<Database["public"]["Tables"]["classes"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "classes_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "classes_class_teacher_fk"; columns: ["class_teacher_id"]; referencedRelation: "teachers"; referencedColumns: ["id"] },
+        ];
       };
       subjects: {
         Row: {
@@ -207,13 +220,18 @@ export interface Database {
           code: string;
         };
         Update: Partial<Database["public"]["Tables"]["subjects"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "subjects_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+        ];
       };
       class_subjects: {
         Row: { class_id: string; subject_id: string };
         Insert: { class_id: string; subject_id: string };
         Update: Partial<{ class_id: string; subject_id: string }>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "class_subjects_class_id_fkey"; columns: ["class_id"]; referencedRelation: "classes"; referencedColumns: ["id"] },
+          { foreignKeyName: "class_subjects_subject_id_fkey"; columns: ["subject_id"]; referencedRelation: "subjects"; referencedColumns: ["id"] },
+        ];
       };
       teachers: {
         Row: {
@@ -233,19 +251,29 @@ export interface Database {
           staff_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["teachers"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "teachers_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "teachers_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+        ];
       };
       teacher_classes: {
         Row: { teacher_id: string; class_id: string };
         Insert: { teacher_id: string; class_id: string };
         Update: Partial<{ teacher_id: string; class_id: string }>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "teacher_classes_teacher_id_fkey"; columns: ["teacher_id"]; referencedRelation: "teachers"; referencedColumns: ["id"] },
+          { foreignKeyName: "teacher_classes_class_id_fkey"; columns: ["class_id"]; referencedRelation: "classes"; referencedColumns: ["id"] },
+        ];
       };
       teacher_subject_assignments: {
         Row: { teacher_id: string; class_id: string; subject_id: string };
         Insert: { teacher_id: string; class_id: string; subject_id: string };
         Update: Partial<{ teacher_id: string; class_id: string; subject_id: string }>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "teacher_subject_assignments_teacher_id_fkey"; columns: ["teacher_id"]; referencedRelation: "teachers"; referencedColumns: ["id"] },
+          { foreignKeyName: "teacher_subject_assignments_class_id_fkey"; columns: ["class_id"]; referencedRelation: "classes"; referencedColumns: ["id"] },
+          { foreignKeyName: "teacher_subject_assignments_subject_id_fkey"; columns: ["subject_id"]; referencedRelation: "subjects"; referencedColumns: ["id"] },
+        ];
       };
       students: {
         Row: {
@@ -273,7 +301,12 @@ export interface Database {
           class_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["students"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "students_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "students_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "students_class_id_fkey"; columns: ["class_id"]; referencedRelation: "classes"; referencedColumns: ["id"] },
+          { foreignKeyName: "students_current_academic_session_id_fkey"; columns: ["current_academic_session_id"]; referencedRelation: "academic_sessions"; referencedColumns: ["id"] },
+        ];
       };
       parents: {
         Row: {
@@ -294,13 +327,19 @@ export interface Database {
           full_name: string;
         };
         Update: Partial<Database["public"]["Tables"]["parents"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "parents_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "parents_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+        ];
       };
       parent_students: {
         Row: { parent_id: string; student_id: string };
         Insert: { parent_id: string; student_id: string };
         Update: Partial<{ parent_id: string; student_id: string }>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "parent_students_parent_id_fkey"; columns: ["parent_id"]; referencedRelation: "parents"; referencedColumns: ["id"] },
+          { foreignKeyName: "parent_students_student_id_fkey"; columns: ["student_id"]; referencedRelation: "students"; referencedColumns: ["id"] },
+        ];
       };
       results: {
         Row: {
@@ -342,7 +381,18 @@ export interface Database {
           entered_by: string;
         };
         Update: Partial<Database["public"]["Tables"]["results"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "results_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_student_id_fkey"; columns: ["student_id"]; referencedRelation: "students"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_class_id_fkey"; columns: ["class_id"]; referencedRelation: "classes"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_academic_session_id_fkey"; columns: ["academic_session_id"]; referencedRelation: "academic_sessions"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_term_id_fkey"; columns: ["term_id"]; referencedRelation: "terms"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_entered_by_fkey"; columns: ["entered_by"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_submitted_by_fkey"; columns: ["submitted_by"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_approved_by_fkey"; columns: ["approved_by"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_published_by_fkey"; columns: ["published_by"]; referencedRelation: "users"; referencedColumns: ["id"] },
+          { foreignKeyName: "results_hidden_by_fkey"; columns: ["hidden_by"]; referencedRelation: "users"; referencedColumns: ["id"] },
+        ];
       };
       result_subject_scores: {
         Row: {
@@ -364,7 +414,10 @@ export interface Database {
           total: number;
         };
         Update: Partial<Database["public"]["Tables"]["result_subject_scores"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "result_subject_scores_result_id_fkey"; columns: ["result_id"]; referencedRelation: "results"; referencedColumns: ["id"] },
+          { foreignKeyName: "result_subject_scores_subject_id_fkey"; columns: ["subject_id"]; referencedRelation: "subjects"; referencedColumns: ["id"] },
+        ];
       };
       notifications: {
         Row: {
@@ -391,7 +444,10 @@ export interface Database {
           channel: NotificationChannel;
         };
         Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "notifications_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "notifications_recipient_id_fkey"; columns: ["recipient_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
+        ];
       };
       audit_logs: {
         Row: {
@@ -411,7 +467,10 @@ export interface Database {
           action: AuditAction;
         };
         Update: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "audit_logs_school_id_fkey"; columns: ["school_id"]; referencedRelation: "schools"; referencedColumns: ["id"] },
+          { foreignKeyName: "audit_logs_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
+        ];
       };
     };
     Views: Record<string, never>;
