@@ -4,6 +4,7 @@ import { requireSession } from "@/lib/auth/requireSession";
 import { resultSchema } from "@/lib/validations/result";
 import { saveDraftResult } from "@/services/resultService";
 import { handleApiError, AuthorizationError } from "@/lib/utils/errors";
+import { RESULT_STATUSES, type ResultStatus } from "@/types/enums";
 
 /**
  * Lists results visible to the current user. Row Level Security already
@@ -16,8 +17,13 @@ export async function GET(request: NextRequest) {
     const session = await requireSession();
     const supabase = await createClient();
 
-    const status = request.nextUrl.searchParams.get("status");
+    const statusParam = request.nextUrl.searchParams.get("status");
     const classId = request.nextUrl.searchParams.get("classId");
+
+    if (statusParam && !RESULT_STATUSES.includes(statusParam as ResultStatus)) {
+      return NextResponse.json({ error: "Invalid result status filter." }, { status: 400 });
+    }
+    const status = statusParam as ResultStatus | null;
 
     let query = supabase
       .from("results")
