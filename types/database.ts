@@ -93,6 +93,7 @@ export interface Database {
         };
         Insert: Partial<Database["public"]["Tables"]["schools"]["Row"]> & { name: string };
         Update: Partial<Database["public"]["Tables"]["schools"]["Row"]>;
+        Relationships: [];
       };
       users: {
         Row: {
@@ -117,6 +118,7 @@ export interface Database {
           role: UserRole;
         };
         Update: Partial<Database["public"]["Tables"]["users"]["Row"]>;
+        Relationships: [];
       };
       academic_sessions: {
         Row: {
@@ -137,6 +139,7 @@ export interface Database {
           end_date: string;
         };
         Update: Partial<Database["public"]["Tables"]["academic_sessions"]["Row"]>;
+        Relationships: [];
       };
       terms: {
         Row: {
@@ -162,6 +165,7 @@ export interface Database {
           end_date: string;
         };
         Update: Partial<Database["public"]["Tables"]["terms"]["Row"]>;
+        Relationships: [];
       };
       classes: {
         Row: {
@@ -182,6 +186,7 @@ export interface Database {
           level: SchoolLevel;
         };
         Update: Partial<Database["public"]["Tables"]["classes"]["Row"]>;
+        Relationships: [];
       };
       subjects: {
         Row: {
@@ -202,11 +207,13 @@ export interface Database {
           code: string;
         };
         Update: Partial<Database["public"]["Tables"]["subjects"]["Row"]>;
+        Relationships: [];
       };
       class_subjects: {
         Row: { class_id: string; subject_id: string };
         Insert: { class_id: string; subject_id: string };
         Update: Partial<{ class_id: string; subject_id: string }>;
+        Relationships: [];
       };
       teachers: {
         Row: {
@@ -226,16 +233,19 @@ export interface Database {
           staff_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["teachers"]["Row"]>;
+        Relationships: [];
       };
       teacher_classes: {
         Row: { teacher_id: string; class_id: string };
         Insert: { teacher_id: string; class_id: string };
         Update: Partial<{ teacher_id: string; class_id: string }>;
+        Relationships: [];
       };
       teacher_subject_assignments: {
         Row: { teacher_id: string; class_id: string; subject_id: string };
         Insert: { teacher_id: string; class_id: string; subject_id: string };
         Update: Partial<{ teacher_id: string; class_id: string; subject_id: string }>;
+        Relationships: [];
       };
       students: {
         Row: {
@@ -263,6 +273,7 @@ export interface Database {
           class_id: string;
         };
         Update: Partial<Database["public"]["Tables"]["students"]["Row"]>;
+        Relationships: [];
       };
       parents: {
         Row: {
@@ -283,11 +294,13 @@ export interface Database {
           full_name: string;
         };
         Update: Partial<Database["public"]["Tables"]["parents"]["Row"]>;
+        Relationships: [];
       };
       parent_students: {
         Row: { parent_id: string; student_id: string };
         Insert: { parent_id: string; student_id: string };
         Update: Partial<{ parent_id: string; student_id: string }>;
+        Relationships: [];
       };
       results: {
         Row: {
@@ -329,6 +342,7 @@ export interface Database {
           entered_by: string;
         };
         Update: Partial<Database["public"]["Tables"]["results"]["Row"]>;
+        Relationships: [];
       };
       result_subject_scores: {
         Row: {
@@ -350,6 +364,7 @@ export interface Database {
           total: number;
         };
         Update: Partial<Database["public"]["Tables"]["result_subject_scores"]["Row"]>;
+        Relationships: [];
       };
       notifications: {
         Row: {
@@ -376,6 +391,7 @@ export interface Database {
           channel: NotificationChannel;
         };
         Update: Partial<Database["public"]["Tables"]["notifications"]["Row"]>;
+        Relationships: [];
       };
       audit_logs: {
         Row: {
@@ -395,6 +411,7 @@ export interface Database {
           action: AuditAction;
         };
         Update: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]>;
+        Relationships: [];
       };
     };
   };
