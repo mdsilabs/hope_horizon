@@ -22,7 +22,7 @@ export function TableRow({ children, className }: { children: React.ReactNode; c
   return <tr className={cn("hover:bg-surface-muted/60 transition-colors", className)}>{children}</tr>;
 }
 
-export function TableHeaderCell({ children, className }: { children: React.ReactNode; className?: string }) {
+export function TableHeaderCell({ children, className }: { children?: React.ReactNode; className?: string }) {
   return (
     <th
       scope="col"
