@@ -36,7 +36,7 @@ export default async function StudentResultsPage() {
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold text-slate-900">My results</h1>
-        <p className="mt-1 text-sm text-slate-500">Published results appear here as soon as they're released.</p>
+        <p className="mt-1 text-sm text-slate-500">Published results appear here as soon as they are released.</p>
       </div>
 
       <Card>
