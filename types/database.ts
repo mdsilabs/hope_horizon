@@ -413,6 +413,8 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["audit_logs"]["Row"]>;
         Relationships: [];
       };
+      Views: Record<string, never>;
+      Functions: Record<string, never>;
     };
   };
 }
