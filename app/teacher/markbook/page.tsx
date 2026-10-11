@@ -112,7 +112,7 @@ export default function SubjectMarkbookPage(){
               <th className="p-3">Total</th>
             </tr></thead>
             <tbody className="divide-y divide-slate-100">
-              {data.students.map(student=>{
+              {data?.students.map(student=>{
                 const score=values[student.id]||{ca:"",exam:""};
                 return <tr key={student.id}>
                   <td className="p-3 font-medium text-slate-800">{student.full_name}</td>
@@ -129,12 +129,12 @@ export default function SubjectMarkbookPage(){
               })}
             </tbody>
           </table>
-          {data.students.length===0&&<p className="p-4 text-sm text-slate-500">No students in this class.</p>}
+          {(data?.students.length??0)===0&&<p className="p-4 text-sm text-slate-500">No students in this class.</p>}
         </div>
         <div className="mt-4 flex flex-wrap gap-3">
-          <Button variant="secondary" disabled={busy||locked||!data.termId||!data.students.length}
+          <Button variant="secondary" disabled={busy||locked||!data?.termId||!data?.students.length}
             onClick={()=>void save(false)} isLoading={busy}><Save className="h-4 w-4"/>Save draft</Button>
-          <Button disabled={busy||locked||!data.termId||!data.students.length}
+          <Button disabled={busy||locked||!data?.termId||!data?.students.length}
             onClick={()=>void save(true)}><Send className="h-4 w-4"/>Submit subject marks</Button>
         </div>
       </Card>}
