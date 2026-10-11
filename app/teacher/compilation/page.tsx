@@ -6,7 +6,7 @@ import {Card} from "@/components/ui/Card";
 import {Button} from "@/components/ui/Button";
 
 type ClassRow={classId:string;className:string;studentCount:number;subjectCount:number;
- expected:number;submitted:number;batch:{status:string;decision_remarks:string|null}|null};
+ expected:number;submitted:number;verified:boolean;reviewedAt:string|null;batch:{status:string;decision_remarks:string|null}|null};
 type Response={termId:string|null;classes:ClassRow[]};
 function msg(b:unknown):string{return (b as {error?:{message?:string}})?.error?.message||"Request failed.";}
 export default function ClassCompilationPage(){
@@ -82,14 +82,17 @@ export default function ClassCompilationPage(){
               {row.batch?.status==="APPROVED"?"Head of school approved the class."
                 :row.batch?.status==="PENDING_APPROVAL"?"Awaiting head-of-school approval."
                 :row.batch?.status==="RETURNED"?"Returned for corrections. Subject teachers must resubmit their marks."
-                :ready?"All subjects submitted. Class is ready to compile."
+                :ready&&row.verified?"All subjects submitted and class teacher sign-off recorded."
+                :ready?"All subject marks submitted. Open the score matrix to review and sign off."
                 :"Subject submissions are still incomplete."}
             </p>
             {row.batch?.decision_remarks&&<p className="mt-2 rounded-lg bg-amber-50 p-2 text-sm text-amber-900">
               Feedback: {row.batch.decision_remarks}</p>}
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <Button disabled={!ready||blocked||!data.termId||!!busy} isLoading={busy===row.classId}
+              <Button disabled={!ready||!row.verified||blocked||!data.termId||!!busy} isLoading={busy===row.classId}
                 onClick={()=>void compile(row)}><Send className="h-4 w-4"/>Compile and send</Button>
+              <Link className="text-sm font-medium text-brand-700 hover:underline"
+                href={"/teacher/compilation/"+row.classId}>Review score matrix</Link>
               <Link className="text-sm font-medium text-brand-700 hover:underline" href="/teacher/markbook">
                 Open markbooks
               </Link>
@@ -98,7 +101,8 @@ export default function ClassCompilationPage(){
         })}
       </div>}
     <p className="text-xs text-slate-500">
-      Each compilation is transactional. Nothing is published until school-head approval and the separate publication step.
+      Each compilation now requires class-teacher verification of the complete score matrix.
+      Nothing is published until school-head approval and the separate publication step.
     </p>
   </div>;
 }

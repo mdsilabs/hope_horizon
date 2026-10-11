@@ -4,6 +4,9 @@ import {createClient} from "@/lib/supabase/server";
 import {markbookSaveSchema} from "@/lib/validations/compilation";
 import {uuidString} from "@/lib/validations/common";
 import {AppError,handleApiError} from "@/lib/utils/errors";
+import {createAdminClient} from "@/lib/supabase/admin";
+import {sendNotification} from "@/services/notificationService";
+import {gmailSmtpConfigured} from "@/lib/email/gmail-smtp";
 
 export async function GET(request:NextRequest){
   try{
@@ -34,15 +37,21 @@ export async function GET(request:NextRequest){
     if(!assignments.some(a=>a.classId===classId&&a.subjectId===subjectId))
       throw new AppError("This class and subject are not assigned to you.",403);
     if(!school?.current_term_id)throw new AppError("No active term. Ask your school administrator.",422);
-    const [{data:students,error:studentsError},{data:marks,error:marksError}]=await Promise.all([
+    const [{data:students,error:studentsError},{data:marks,error:marksError},
+     {data:flags,error:flagsError}]=await Promise.all([
       db.from("students").select("id,full_name,admission_number").eq("school_id",schoolId)
         .eq("class_id",classId).eq("is_active",true).order("full_name").limit(250),
       db.from("subject_markbooks").select("student_id,ca,exam,status")
         .eq("school_id",schoolId).eq("class_id",classId).eq("subject_id",subjectId)
-        .eq("term_id",school.current_term_id).limit(250),
+         .eq("term_id",school.current_term_id).limit(250),
+      db.from("class_subject_corrections").select("reason,requested_at")
+        .eq("school_id",schoolId).eq("class_id",classId).eq("subject_id",subjectId)
+        .eq("term_id",school.current_term_id).is("resolved_at",null)
+        .order("requested_at",{ascending:false}).limit(1),
     ]);
-    if(studentsError||marksError)throw studentsError||marksError;
-    return NextResponse.json({termId:school.current_term_id,assignments,students:students??[],marks:marks??[]});
+    if(studentsError||marksError||flagsError)throw studentsError||marksError||flagsError;
+    return NextResponse.json({termId:school.current_term_id,assignments,students:students??[],marks:marks??[],
+      correction:flags?.[0]??null});
   }catch(e){return handleApiError(e);}
 }
 export async function POST(request:NextRequest){
@@ -59,6 +68,29 @@ export async function POST(request:NextRequest){
       if(["42501","22023","23514","23503"].includes(error.code))
         throw new AppError(error.message,422);
       throw error;
+    }
+    if(input.submit){
+      try{
+        const privileged=createAdminClient();
+        const {data:flags}=await privileged.from("class_subject_corrections")
+          .select("id").eq("class_id",input.classId).eq("subject_id",input.subjectId)
+          .eq("term_id",input.termId).is("resolved_at",null).limit(1);
+        if(flags?.length){
+          const {data:assigned}=await privileged.from("teacher_classes")
+            .select("teachers(user_id,is_active)").eq("class_id",input.classId).limit(20);
+          const {profile,authUserId}=await requireRole(["TEACHER"]);
+          const recipients=Array.from(new Set((assigned??[]).filter(a=>a.teachers?.is_active)
+            .map(a=>a.teachers!.user_id))).filter(id=>id!==authUserId);
+          const title="Corrected subject marks resubmitted";
+          const message="A subject teacher has resubmitted marks for a returned subject. Open the class score matrix and verify the corrections before signing off.";
+          for(const recipientId of recipients){
+            await sendNotification({schoolId:profile.school_id,recipientId,title,message,
+              type:"OTHER",channel:"IN_APP"});
+            if(gmailSmtpConfigured())await sendNotification({schoolId:profile.school_id,recipientId,
+              title,message,type:"OTHER",channel:"EMAIL"});
+          }
+        }
+      }catch{console.error("Resubmission notification dispatch incomplete.");}
     }
     return NextResponse.json({count:data,status:input.submit?"SUBMITTED":"DRAFT"});
   }catch(e){return handleApiError(e);}
