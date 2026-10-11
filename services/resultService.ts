@@ -81,6 +81,9 @@ async function assertTeacherCanEnterResult(
 
 /** Creates a new draft result, or updates an existing draft one for the same student+session+term. */
 export async function saveDraftResult(session: CurrentSession, input: ResultInput): Promise<ResultRow> {
+  if (session.profile.role === "TEACHER") {
+    throw new AuthorizationError("Teachers must enter marks using Subject Markbook. Class teachers compile and submit the completed class.");
+  }
   await assertTeacherCanEnterResult(
     session,
     input.classId,
@@ -88,6 +91,32 @@ export async function saveDraftResult(session: CurrentSession, input: ResultInpu
   );
 
   const supabase = createAdminClient();
+  // Validate the complete academic scope BEFORE any privileged service-role write.
+  const schoolId = session.profile.school_id;
+  const [{data:student},{data:term},{data:cls},{data:schoolForPeriod}] = await Promise.all([
+    supabase.from("students").select("id").eq("id",input.studentId)
+      .eq("school_id",schoolId).eq("class_id",input.classId).eq("is_active",true).maybeSingle(),
+    supabase.from("terms").select("id").eq("id",input.termId).eq("school_id",schoolId)
+      .eq("academic_session_id",input.academicSessionId).eq("is_active",true).maybeSingle(),
+    supabase.from("classes").select("id").eq("id",input.classId)
+      .eq("school_id",schoolId).eq("is_active",true).maybeSingle(),
+    supabase.from("schools").select("current_term_id,current_academic_session_id")
+      .eq("id",schoolId).single(),
+  ]);
+  if(!student||!term||!cls||schoolForPeriod?.current_term_id!==input.termId
+    ||schoolForPeriod?.current_academic_session_id!==input.academicSessionId)
+    throw new AuthorizationError("Student, class and active period must belong to your school.");
+  const {data:classSubjects,error:classSubjectsError}=await supabase.from("class_subjects")
+    .select("subject_id").eq("class_id",input.classId);
+  if(classSubjectsError)throw classSubjectsError;
+  const expected=new Set((classSubjects||[]).map(s=>s.subject_id));
+  if(input.subjects.some(s=>!expected.has(s.subjectId))
+      ||new Set(input.subjects.map(s=>s.subjectId)).size!==input.subjects.length)
+    throw new AuthorizationError("Choose distinct subjects assigned to the selected class.");
+  const {data:existingBatch,error:batchError}=await supabase.from("class_result_batches")
+    .select("id").eq("class_id",input.classId).eq("term_id",input.termId).maybeSingle();
+  if(batchError)throw batchError;
+  if(existingBatch)throw new ConflictError("This class uses class compilation. Edit its subject markbooks instead.");
   const { data: school } = await supabase
     .from("schools")
     .select("grading_scale")
@@ -184,6 +213,8 @@ export async function saveDraftResult(session: CurrentSession, input: ResultInpu
 }
 
 export async function submitResult(session: CurrentSession, resultId: string): Promise<ResultRow> {
+  if(session.profile.role==="TEACHER")throw new AuthorizationError(
+    "Submit subject marks in Markbook, then compile the class for school-head approval.");
   const supabase = createAdminClient();
   const { data: result } = await supabase.from("results").select("*").eq("id", resultId).single();
 
@@ -243,6 +274,12 @@ export async function decideResultApproval(
   if (result.status !== "PENDING_APPROVAL") {
     throw new ConflictError("Only results awaiting approval can be approved or rejected.");
   }
+  const {data:compiledBatch,error:batchError}=await supabase.from("class_result_batches")
+    .select("id").eq("class_id",result.class_id).eq("term_id",result.term_id).maybeSingle();
+  if(batchError)throw batchError;
+  if(compiledBatch)throw new ConflictError(
+    "This result belongs to a compiled class. Use Class Result Approval to approve or return the entire class.");
+
 
   let updated: ResultRow;
 

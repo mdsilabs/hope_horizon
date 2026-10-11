@@ -133,3 +133,8 @@ Audit metadata must never contain passwords, tokens, or other secrets.
 
 This blueprint should be kept in sync with the codebase — if a workflow or
 model changes, update this document alongside it.
+
+
+## 11. Subject -> Class -> Head approval (migration 0009)
+
+The new workflow replaces direct per-student teacher submission. Assigned subject teachers own one subject markbook per class and active term and submit full-class marks. Class teachers compile only when every active subject has a submitted mark for every active pupil. Head-of-school approval is class-wide and atomic, with whole-class return for corrections. Publishing is still separate. See docs/RESULT_COMPILATION.md. Legacy results are not automatically migrated.

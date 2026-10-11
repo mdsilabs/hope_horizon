@@ -98,6 +98,30 @@ export interface Database {
           { foreignKeyName: "schools_current_term_fk"; columns: ["current_term_id"]; referencedRelation: "terms"; referencedColumns: ["id"] },
         ];
       };
+      subject_markbooks: {
+        Row: {
+          id:string;school_id:string;class_id:string;subject_id:string;student_id:string;
+          academic_session_id:string;term_id:string;teacher_id:string;
+          ca:number;exam:number;status:"DRAFT"|"SUBMITTED";submitted_at:string|null;updated_at:string;
+        };
+        Insert: Database["public"]["Tables"]["subject_markbooks"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["subject_markbooks"]["Row"]>;
+        Relationships: [];
+      };
+      class_result_batches: {
+        Row: {
+          id:string;school_id:string;class_id:string;academic_session_id:string;term_id:string;
+          compiled_by:string;status:"PENDING_APPROVAL"|"APPROVED"|"RETURNED";
+          submitted_at:string;decided_by:string|null;decided_at:string|null;decision_remarks:string|null;
+        };
+        Insert: Database["public"]["Tables"]["class_result_batches"]["Row"];
+        Update: Partial<Database["public"]["Tables"]["class_result_batches"]["Row"]>;
+        Relationships: [
+          { foreignKeyName: "class_result_batches_class_id_fkey"; columns:["class_id"]; referencedRelation:"classes"; referencedColumns:["id"] },
+          { foreignKeyName: "class_result_batches_term_id_fkey"; columns:["term_id"]; referencedRelation:"terms"; referencedColumns:["id"] },
+          { foreignKeyName: "class_result_batches_school_id_fkey"; columns:["school_id"]; referencedRelation:"schools"; referencedColumns:["id"] }
+        ];
+      };
       school_media_settings: {
         Row: { school_id: string; cloud_name: string; folder: string; enabled: boolean; updated_at: string };
         Insert: { school_id: string; cloud_name: string; folder?: string; enabled?: boolean };
@@ -484,6 +508,15 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_save_subject_markbook: {
+        Args:{p_class_id:string;p_subject_id:string;p_term_id:string;
+          p_scores:{studentId:string;ca:number;exam:number}[];p_submit:boolean};
+        Returns:number;
+      };
+      hh_compile_class_results: {Args:{p_class_id:string;p_term_id:string};Returns:number};
+      hh_head_decide_class_batch: {
+        Args:{p_batch_id:string;p_action:string;p_remarks:string};Returns:boolean;
+      };
       hh_admin_replace_parent_children: { Args: { p_parent_id: string; p_student_ids: string[] }; Returns: boolean };
       hh_admin_replace_teacher_assignments: {
         Args: { p_teacher_id: string; p_class_ids: string[]; p_subject_assignments: { classId: string; subjectId: string }[] };

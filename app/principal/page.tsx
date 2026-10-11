@@ -46,8 +46,8 @@ export default async function PrincipalDashboardPage() {
         <StatCard label="Published this term" value={publishedCount} icon={<ClipboardCheck className="h-5 w-5" />} />
       </div>
 
-      <Link href={`${basePath}/approvals`}>
-        <Button>Go to approvals queue</Button>
+      <Link href={`${basePath}/class-approvals`}>
+        <Button>Review compiled classes</Button>
       </Link>
     </div>
   );
