@@ -9,7 +9,7 @@ update public.users set admin_tier = 'PRIMARY'
 
 alter table public.users
   add constraint hh_user_admin_tier_matches_role check (
-    (role = 'ADMIN'::public.user_role and admin_tier in ('PRIMARY', 'CO_ADMIN'))
+    (role = 'ADMIN'::public.user_role and admin_tier is not null and admin_tier in ('PRIMARY', 'CO_ADMIN'))
     or (role <> 'ADMIN'::public.user_role and admin_tier is null)
   );
 
@@ -114,16 +114,16 @@ create trigger hh_admin_identity_guard
 -- their direct PostgREST requests, even when bypassing the Next.js UI.
 create or replace function public.current_user_school_id()
 returns uuid language sql stable security definer set search_path = ''
-as $
+as $hh_school_id$
   select u.school_id from public.users u
   where u.id = (select auth.uid()) and u.is_active;
-$;
+$hh_school_id$;
 create or replace function public.current_user_role()
 returns public.user_role language sql stable security definer set search_path = ''
-as $
+as $hh_user_role$
   select u.role from public.users u
   where u.id = (select auth.uid()) and u.is_active;
-$;
+$hh_user_role$;
 
 commit;
 
