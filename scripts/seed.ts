@@ -12,13 +12,14 @@
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
 import type { Database } from "../types/database";
+import { getPublicSupabaseConfig } from "../lib/supabase/config";
 
-const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const url = getPublicSupabaseConfig().url;
+const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-if (!url || !serviceRoleKey) {
+if (!serviceRoleKey) {
   throw new Error(
-    "NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set. Copy .env.example to .env.local first."
+    "Configure SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY in your private environment."
   );
 }
 
@@ -48,6 +49,9 @@ async function createAuthUser(
 }
 
 async function seed() {
+  if (process.env.ALLOW_DEMO_SEED !== "true") {
+    throw new Error("Demo seeding is disabled. Set ALLOW_DEMO_SEED=true only in an isolated test project.");
+  }
   console.log("Seeding Hope Horizon Academy demo data...");
 
   const { data: school, error: schoolError } = await supabase

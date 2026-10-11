@@ -59,3 +59,21 @@ For authenticated, read-only server/database checks use /admin/integrations.
   school first.
 - Teacher provisioning does not yet offer re-activating/deactivating teacher
   accounts or changing their login emails from the UI.
+
+## Pinned development project
+- Supabase project: **supabase-cyclamen-park**, ref `iwfpdwihinhcwjgvmfei`.
+- `lib/supabase/config.ts` contains ONLY the public project URL and public
+  publishable key. Do not add a database password, JWT secret, service-role
+  credential or secret API key to source control.
+- `NEXT_PUBLIC_SUPABASE_URL` must match the pinned project if supplied.
+  `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` may replace the public key.
+  The old `NEXT_PUBLIC_SUPABASE_ANON_KEY` is no longer used by the app.
+- Put `SUPABASE_SECRET_KEY` (preferred) or `SUPABASE_SERVICE_ROLE_KEY`
+  in Vercel's **server-only** Environment Variables. No `NEXT_PUBLIC_` prefix.
+- The credentials supplied in chat should be rotated before any further use
+  outside an isolated test environment. Replace affected passwords and keys
+  before handing over the app and invalidate the old ones as appropriate.
+- The provided project is not authorized in the connected Supabase integration
+  in this workspace. No migrations or data writes were made there.
+- `npm run seed` is disabled until `ALLOW_DEMO_SEED=true` is explicitly
+  set; do not run it against real school records.

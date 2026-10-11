@@ -1,6 +1,7 @@
 import "server-only";
 import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import type { Database } from "@/types/database";
+import { getPublicSupabaseConfig } from "./config";
 
 /**
  * Service-role Supabase client. This BYPASSES Row Level Security entirely
@@ -15,12 +16,12 @@ import type { Database } from "@/types/database";
  * itself (see lib/auth/requireRole.ts) since RLS is not doing that job.
  */
 export function createAdminClient() {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  const { url } = getPublicSupabaseConfig();
+  const serviceRoleKey = process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-  if (!url || !serviceRoleKey) {
+  if (!serviceRoleKey) {
     throw new Error(
-      "Missing NEXT_PUBLIC_SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY. Define them in .env.local (see .env.example)."
+      "Missing server-only SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY. Configure a rotated credential in a private environment variable."
     );
   }
 
