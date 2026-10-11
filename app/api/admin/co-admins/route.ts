@@ -61,7 +61,7 @@ export async function POST(request:NextRequest){
 
     const {error:auditError}=await db.from("audit_logs").insert({
       school_id:schoolId,user_id:session.authUserId,action:"SYSTEM_SETTING_CHANGED",
-      entity_type:"co_admin",entity_id:id,metadata:{operation:"co_admin_created"},
+      entity_type:"co_admin",entity_id:id,metadata:{operation:"co_admin_created",setupMethod},
     });
     if(auditError)console.error("Co-Admin creation audit failed.");
     const emailStatus=await requestSetupEmail(admin,email);

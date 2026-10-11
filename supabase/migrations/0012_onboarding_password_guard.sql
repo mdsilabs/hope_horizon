@@ -46,4 +46,13 @@ as $role$
   where u.id=(select auth.uid()) and u.is_active and not u.must_change_password;
 $role$;
 
+-- Capability probe: account provisioning fails closed until this migration runs.
+create or replace function public.hh_onboarding_guard_ready()
+returns boolean language sql stable security invoker set search_path=''
+as $ready$
+  select true;
+$ready$;
+revoke all on function public.hh_onboarding_guard_ready() from public,anon;
+grant execute on function public.hh_onboarding_guard_ready() to authenticated;
+
 commit;

@@ -5,7 +5,7 @@ import { canAccessSegment } from "@/lib/auth/rbac";
 import { getPublicSupabaseConfig } from "@/lib/supabase/config";
 
 const PROTECTED_SEGMENTS = [
-  "admin", "teacher", "student", "parent", "principal", "vice-principal", "accountant", "profile", "reports",
+  "admin", "teacher", "student", "parent", "principal", "vice-principal", "accountant", "profile", "reports", "change-password",
 ];
 const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/reset-password", "/result-verification"];
 
@@ -53,9 +53,15 @@ export async function middleware(request: NextRequest) {
     if (authError || !user) return loginRedirect(request, pathname);
 
     const { data: profile, error: profileError } = await supabase
-      .from("users").select("role, is_active").eq("id", user.id).single();
-    if (profileError || !profile || !profile.is_active || (firstSegment !== "profile" && firstSegment !== "reports" && !canAccessSegment(profile.role, firstSegment))) {
+      .from("users").select("role, is_active, must_change_password").eq("id", user.id).single();
+    if (profileError || !profile || !profile.is_active || (firstSegment !== "profile" && firstSegment !== "reports" && firstSegment !== "change-password" && !canAccessSegment(profile.role, firstSegment))) {
       return NextResponse.redirect(new URL("/", request.url));
+    }
+    if(profile.must_change_password && firstSegment!=="change-password"){
+      return NextResponse.redirect(new URL("/change-password",request.url));
+    }
+    if(!profile.must_change_password && firstSegment==="change-password"){
+      return NextResponse.redirect(new URL("/",request.url));
     }
     return response;
   } catch (error) {

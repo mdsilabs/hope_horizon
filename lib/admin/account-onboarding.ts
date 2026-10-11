@@ -4,6 +4,10 @@ import { AppError } from "@/lib/utils/errors";
 import { createClient } from "@/lib/supabase/server";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
+/** A cryptographically random, single-display credential with >140 bits of entropy. */
+export function generateTemporaryPassword() {
+  return randomBytes(18).toString("base64url") + "Aa1!";
+}
 export function generateUnusedPassword() {
   return randomBytes(42).toString("base64url") + "Aa1!";
 }

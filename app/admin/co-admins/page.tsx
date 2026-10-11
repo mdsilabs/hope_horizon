@@ -1,6 +1,6 @@
 "use client";
 import {useCallback,useEffect,useState,type FormEvent} from "react";
-import {ShieldCheck,Plus,RefreshCw,Mail,UserRound,LockKeyhole} from "lucide-react";
+import {ShieldCheck,Plus,RefreshCw,Mail,UserRound,LockKeyhole,Copy,Check} from "lucide-react";
 import {Card} from "@/components/ui/Card";
 import {Button} from "@/components/ui/Button";
 import {Input} from "@/components/ui/Input";
@@ -20,6 +20,9 @@ export default function CoAdminManagementPage(){
   const [admins,setAdmins]=useState<Administrator[]>([]);
   const [currentUserId,setCurrentUserId]=useState("");
   const [name,setName]=useState(""),[email,setEmail]=useState("");
+  const [setupMethod,setSetupMethod]=useState<"TEMPORARY_PASSWORD"|"EMAIL_LINK">("TEMPORARY_PASSWORD");
+  const [credential,setCredential]=useState<{email:string;password:string}|null>(null);
+  const [copied,setCopied]=useState(false);
   const [loading,setLoading]=useState(true),[busyId,setBusyId]=useState(""),[creating,setCreating]=useState(false);
   const [error,setError]=useState(""),[notice,setNotice]=useState("");
 
@@ -35,13 +38,16 @@ export default function CoAdminManagementPage(){
 
   async function create(e:FormEvent<HTMLFormElement>){
     e.preventDefault();
-    setCreating(true);setNotice("");setError("");
+    if(credential&&!window.confirm("Creating another account will clear the displayed temporary password. Have you saved it securely?"))return;
+    setCreating(true);setNotice("");setError("");setCredential(null);setCopied(false);
     try{
-      const result=await call<{message:string}>("/api/admin/co-admins",{
+      const result=await call<{message:string;temporaryPassword?:string;email:string}>("/api/admin/co-admins",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({fullName:name,email}),
+        body:JSON.stringify({fullName:name,email,setupMethod}),
       });
-      setName("");setEmail("");setNotice(result.message);await load();
+      setName("");setEmail("");setNotice(result.message);
+      if(result.temporaryPassword)setCredential({email:result.email,password:result.temporaryPassword});
+      await load();
     }catch(e){setError(e instanceof Error?e.message:"Could not add Co-Admin.");}
     finally{setCreating(false);}
   }
@@ -97,12 +103,56 @@ export default function CoAdminManagementPage(){
           <Input id="coadmin-email" required type="email" label="Email address"
             value={email} onChange={e=>setEmail(e.target.value)} placeholder="colleague@example.com"/>
         </div>
+        <fieldset className="w-full rounded-xl border border-slate-200 p-4">
+          <legend className="px-1 text-sm font-semibold text-slate-800">Choose how the Co-Admin signs in</legend>
+          <div className="mt-2 grid gap-3 sm:grid-cols-2">
+            <label className={"flex cursor-pointer items-start gap-3 rounded-xl border p-3 "+
+              (setupMethod==="TEMPORARY_PASSWORD"?"border-brand-500 bg-brand-50":"border-slate-200")}>
+              <input type="radio" name="setup-method" className="mt-1 accent-blue-600"
+                checked={setupMethod==="TEMPORARY_PASSWORD"}
+                onChange={()=>setSetupMethod("TEMPORARY_PASSWORD")}/>
+              <span><span className="block font-semibold text-sm">Create with temporary password</span>
+                <span className="mt-1 block text-xs text-slate-600">No email sent. Show a secure password once for you to pass privately to the Co-Admin.</span></span>
+            </label>
+            <label className={"flex cursor-pointer items-start gap-3 rounded-xl border p-3 "+
+              (setupMethod==="EMAIL_LINK"?"border-brand-500 bg-brand-50":"border-slate-200")}>
+              <input type="radio" name="setup-method" className="mt-1 accent-blue-600"
+                checked={setupMethod==="EMAIL_LINK"} onChange={()=>setSetupMethod("EMAIL_LINK")}/>
+              <span><span className="block font-semibold text-sm">Send email setup link</span>
+                <span className="mt-1 block text-xs text-slate-600">Requires Gmail SMTP configured in Supabase Authentication.</span></span>
+            </label>
+          </div>
+        </fieldset>
         <Button type="submit" disabled={creating||!!busyId} isLoading={creating}>
-          <Plus className="h-4 w-4"/>Create Co-Admin
+          <Plus className="h-4 w-4"/>{setupMethod==="TEMPORARY_PASSWORD"?"Create without email":"Create and email link"}
         </Button>
       </form>
-      <p className="mt-3 text-xs text-slate-500">A unique undisclosed password is created and a password-setup email is requested. Supabase Auth SMTP must be configured for delivery.</p>
+      <p className="mt-3 text-xs text-slate-500">Both methods require the new Co-Admin to set their own password.
+        Use a private channel to share any temporary credential. Never share it in a public group.</p>
     </Card>
+    {credential&&<Card>
+      <div className="flex items-start gap-3">
+        <LockKeyhole className="mt-1 h-6 w-6 shrink-0 text-brand-700"/>
+        <div className="min-w-0 flex-1">
+          <h2 className="font-semibold text-slate-900">Temporary Co-Admin credentials · Displayed once</h2>
+          <p className="mt-1 text-sm text-slate-600">No email was sent. Copy the password before closing this section.
+            It will never appear in the account list and cannot be retrieved after leaving this page.</p>
+          <p className="mt-3 text-sm font-medium">Email: {credential.email}</p>
+          <div className="mt-2 flex flex-wrap items-center gap-2">
+            <code className="max-w-full break-all rounded-lg bg-slate-100 p-3 text-sm font-semibold">{credential.password}</code>
+            <Button size="sm" variant="secondary" onClick={()=>void navigator.clipboard.writeText(credential.password)
+              .then(()=>setCopied(true)).catch(()=>setError("Copy failed. Select and copy the password manually."))}>
+              {copied?<Check className="h-4 w-4"/>:<Copy className="h-4 w-4"/>}
+              {copied?"Copied":"Copy password"}
+            </Button>
+          </div>
+          <p className="mt-2 text-xs text-amber-800">The Co-Admin must sign in at /login and change this password before accessing school data.</p>
+          <Button size="sm" variant="secondary" onClick={()=>{setCredential(null);setCopied(false);}}>
+            Close and clear credentials
+          </Button>
+        </div>
+      </div>
+    </Card>}
     <Card>
       <h2 className="flex items-center gap-2 font-semibold text-slate-900"><ShieldCheck className="h-5 w-5 text-green-700"/>Protected primary administrators</h2>
       <p className="mb-4 mt-1 text-sm text-slate-600">These accounts are protected by database rules and cannot be deactivated or removed through Co-Admin management.</p>

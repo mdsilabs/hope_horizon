@@ -49,7 +49,8 @@ export async function POST(request: NextRequest) {
     // session cookies onto this request's cookie jar during
     // signInWithPassword — no manual cookie handling needed here.
     return NextResponse.json({
-      homeRoute: ROLE_HOME_ROUTE[profile.role],
+      homeRoute: profile.must_change_password ? "/change-password" : ROLE_HOME_ROUTE[profile.role],
+      passwordChangeRequired: profile.must_change_password,
       user: { name: profile.name, role: profile.role, email: profile.email },
     });
   } catch (error) {

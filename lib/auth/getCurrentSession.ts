@@ -20,7 +20,7 @@ export async function getCurrentSession(): Promise<CurrentSession | null> {
   if (!user) return null;
 
   const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single();
-  if (!profile || !profile.is_active) return null;
+  if (!profile || !profile.is_active || profile.must_change_password) return null;
 
   return { authUserId: user.id, profile };
 }
