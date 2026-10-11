@@ -30,6 +30,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "School Setup", href: "/admin/setup", icon: ListChecks },
     { label: "User Profiles", href: "/admin/users", icon: UserCircle },
+    { label: "Co-Admins", href: "/admin/co-admins", icon: Users },
     { label: "Cloudinary", href: "/admin/media", icon: Settings },
     { label: "Students", href: "/admin/students", icon: GraduationCap },
     { label: "Teachers", href: "/admin/teachers", icon: Users },

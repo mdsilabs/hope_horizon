@@ -1,5 +1,15 @@
 # Hope Horizon Academy — Student Results Management Portal
 
+## Co-Administrators (2026-10)
+
+After `supabase/migrations/0008_co_admin_roles.sql` is applied, manage
+co-administrators under `/admin/co-admins`. These staff use the existing
+ADMIN permissions but are marked with an unchangeable `CO_ADMIN` tier.
+Existing Admin accounts become protected `PRIMARY` administrators.
+See [Co-Admin setup](docs/CO_ADMIN_SETUP.md).
+
+
+
 ## User profiles and Cloudinary images
 
 After applying `supabase/migrations/0007_profile_cloudinary.sql` (after 0006),

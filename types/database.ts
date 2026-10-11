@@ -115,6 +115,7 @@ export interface Database {
           avatar_url: string | null;
           avatar_uploaded_at: string | null;
           role: UserRole;
+          admin_tier: "PRIMARY" | "CO_ADMIN" | null;
           is_active: boolean;
           last_login_at: string | null;
           must_change_password: boolean;

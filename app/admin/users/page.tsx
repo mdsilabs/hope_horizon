@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/Input";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 
-type User={id:string;name:string;email:string;role:string;phone:string|null;whatsapp_number:string|null;
+type User={id:string;name:string;email:string;role:string;admin_tier:"PRIMARY"|"CO_ADMIN"|null;phone:string|null;whatsapp_number:string|null;
   avatar_url:string|null;is_active:boolean;last_login_at:string|null};
 function errorMessage(body:unknown):string{
   return (body as {error?:{message?:string}})?.error?.message||"The request could not be completed.";
@@ -86,7 +86,7 @@ export default function ManageUsersPage(){
             <div className="min-w-0 flex-1">
               <span className="block truncate text-sm font-semibold text-slate-800">{u.name}</span>
               <span className="block truncate text-xs text-slate-500">{u.email}</span>
-              <span className="block text-xs text-brand-700">{u.role.replaceAll("_"," ")} · {u.is_active?"Active":"Inactive"}</span>
+              <span className="block text-xs text-brand-700">{u.role==="ADMIN"?(u.admin_tier==="PRIMARY"?"Primary Admin":"Co-Admin"):u.role.replaceAll("_"," ")} · {u.is_active?"Active":"Inactive"}</span>
             </div>
           </button>)}
         </div>}
@@ -104,7 +104,7 @@ export default function ManageUsersPage(){
         {current?<div>
           <h2 className="font-semibold text-slate-900">Edit user profile</h2>
           <p className="mt-1 text-sm text-slate-500">{current.email}</p>
-          <p className="mb-4 text-xs font-medium text-brand-700">{current.role.replaceAll("_"," ")}</p>
+          <p className="mb-4 text-xs font-medium text-brand-700">{current.role==="ADMIN"?(current.admin_tier==="PRIMARY"?"Primary Admin":"Co-Admin"):current.role.replaceAll("_"," ")}</p>
           <form onSubmit={save} className="space-y-4">
             <Input id="edit-user-name" label="Full name" required value={name}
               onChange={e=>setName(e.target.value)} maxLength={120}/>

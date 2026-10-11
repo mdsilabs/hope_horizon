@@ -42,7 +42,8 @@ async function createAuthUser(
     password: DEFAULT_PASSWORD,
     email_confirm: true,
     user_metadata: { name },
-    app_metadata: { role, school_id: schoolId, must_change_password: true },
+    app_metadata: { role, school_id: schoolId,
+      ...(role === "ADMIN" ? { admin_tier: "PRIMARY" } : {}), must_change_password: true },
   });
   if (error || !data.user) throw new Error(`Failed to create auth user ${email}: ${error?.message}`);
   return data.user.id;
