@@ -33,12 +33,6 @@ export async function POST(request:NextRequest){
       throw new AppError("Enter your temporary password to continue.",422);
     if(input.currentPassword===input.newPassword)
       throw new AppError("Choose a different password from the temporary one.",422);
-  }else if(user.app_metadata?.setup_method==="TEMPORARY_PASSWORD" &&
-            profile.must_change_password){
-    // A direct-password Co-Admin may choose to recover via email, but
-    // the browser must first establish a verified recovery session.
-    // Until then require the known original temporary password.
-    throw new AppError("Use your temporary password to change it, or sign in and request a recovery link.",403);
   }
 
   const {error:updateError}=await db.auth.updateUser({

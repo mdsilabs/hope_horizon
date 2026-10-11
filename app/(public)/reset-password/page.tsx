@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 const schema = z.object({
-  newPassword: passwordSchema,
+  newPassword: passwordSchema.min(12,"Use at least 12 characters"),
   confirmPassword: z.string(),
 }).refine(data=>data.newPassword===data.confirmPassword,{
   message:"Passwords do not match",path:["confirmPassword"],
