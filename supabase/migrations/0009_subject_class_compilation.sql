@@ -144,7 +144,16 @@ begin
     from jsonb_to_recordset(p_scores) as item("studentId" uuid, ca numeric, exam numeric)
   on conflict(student_id,subject_id,term_id) do update
     set ca=excluded.ca,exam=excluded.exam,teacher_id=excluded.teacher_id,
-        status=excluded.status,submitted_at=excluded.submitted_at,updated_at=now();
+        status=excluded.status,submitted_at=excluded.submitted_at,updated_at=now()
+    where subject_markbooks.school_id=excluded.school_id
+      and subject_markbooks.class_id=excluded.class_id
+      and subject_markbooks.academic_session_id=excluded.academic_session_id
+      and subject_markbooks.status='DRAFT';
+  get diagnostics v_existing = row_count;
+  if v_existing<>v_count then
+    raise exception 'Markbook was moved, submitted or changed by another teacher'
+      using errcode='22023';
+  end if;
   return v_count;
 end;
 $markbook$;

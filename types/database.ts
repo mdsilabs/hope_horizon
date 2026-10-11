@@ -116,7 +116,11 @@ export interface Database {
         };
         Insert: Database["public"]["Tables"]["class_result_batches"]["Row"];
         Update: Partial<Database["public"]["Tables"]["class_result_batches"]["Row"]>;
-        Relationships: [];
+        Relationships: [
+          { foreignKeyName: "class_result_batches_class_id_fkey"; columns:["class_id"]; referencedRelation:"classes"; referencedColumns:["id"] },
+          { foreignKeyName: "class_result_batches_term_id_fkey"; columns:["term_id"]; referencedRelation:"terms"; referencedColumns:["id"] },
+          { foreignKeyName: "class_result_batches_school_id_fkey"; columns:["school_id"]; referencedRelation:"schools"; referencedColumns:["id"] }
+        ];
       };
       school_media_settings: {
         Row: { school_id: string; cloud_name: string; folder: string; enabled: boolean; updated_at: string };
