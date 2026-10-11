@@ -1,5 +1,15 @@
 # Hope Horizon Academy — Student Results Management Portal
 
+## School onboarding and settings (2026-10)
+
+The first administrator now lands on a dashboard with a database-backed school
+setup progress panel. Visit `/admin/setup` to complete school contact details,
+the current academic period, classes, subject assignments, teacher assignments
+and student enrollment. Use `/admin/settings` to update the school identity,
+academic structure and score limits with safeguards for existing periods and results.
+See [School setup center](docs/SCHOOL_SETUP_CENTER.md).
+
+
 ## First administrator login (2026-10)
 
 **Do not run the demo seed on a real school database.** After applying SQL

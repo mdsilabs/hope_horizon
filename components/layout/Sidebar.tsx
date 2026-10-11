@@ -4,6 +4,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
+  ListChecks,
   Users,
   GraduationCap,
   BookOpen,
@@ -27,6 +28,7 @@ interface NavItem {
 const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   ADMIN: [
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
+    { label: "School Setup", href: "/admin/setup", icon: ListChecks },
     { label: "Students", href: "/admin/students", icon: GraduationCap },
     { label: "Teachers", href: "/admin/teachers", icon: Users },
     { label: "Academic Sessions", href: "/admin/academic", icon: BookOpen },
