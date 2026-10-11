@@ -38,7 +38,7 @@ export default async function TeacherResultDetailPage({ params }: { params: Prom
     <ResultDetailCard result={detail}/>
     <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm text-slate-700">
       Per-student draft editing has been replaced by the subject markbook to prevent
-      one teacher from overwriting another subject teacher's scores.
+      one teacher from overwriting another subject teacher&apos;s scores.
       <Link className="ml-1 font-medium text-brand-700 underline" href="/teacher/markbook">
         Open Subject Markbook
       </Link>
