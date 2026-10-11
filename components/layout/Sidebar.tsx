@@ -37,13 +37,15 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "Academic Sessions", href: "/admin/academic", icon: BookOpen },
     { label: "Integrations", href: "/admin/integrations", icon: Settings },
     { label: "Classes & Subjects", href: "/admin/classes", icon: BookOpen },
+    { label: "Class Approvals", href: "/admin/class-approvals", icon: FileCheck2 },
     { label: "Results", href: "/admin/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/admin/notifications", icon: Bell },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ],
   PRINCIPAL: [
     { label: "Dashboard", href: "/principal", icon: LayoutDashboard },
-    { label: "Approvals", href: "/principal/approvals", icon: FileCheck2 },
+    { label: "Class Approvals", href: "/principal/class-approvals", icon: FileCheck2 },
+    { label: "Legacy Result Review", href: "/principal/approvals", icon: ClipboardCheck },
     { label: "Results Overview", href: "/principal/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/principal/notifications", icon: Bell },
   ],
@@ -56,7 +58,9 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   TEACHER: [
     { label: "Dashboard", href: "/teacher", icon: LayoutDashboard },
     { label: "My Classes", href: "/teacher/classes", icon: BookOpen },
-    { label: "Enter Results", href: "/teacher/results", icon: ClipboardCheck },
+    { label: "Subject Markbook", href: "/teacher/markbook", icon: BookOpen },
+    { label: "Class Compilation", href: "/teacher/compilation", icon: ClipboardCheck },
+    { label: "Previous Results", href: "/teacher/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/teacher/notifications", icon: Bell },
   ],
   STUDENT: [

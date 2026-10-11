@@ -1,3 +1,14 @@
+## Subject-by-subject result compilation (2026-10)
+
+Migration `0009_subject_class_compilation.sql` introduces transactional markbooks
+for each subject, class-teacher compilation and head-of-school class approval.
+Subject teachers use `/teacher/markbook`, class teachers use
+`/teacher/compilation`, and the Principal uses `/principal/class-approvals`.
+ADMIN/Co-Admin may access `/admin/class-approvals`.
+
+See [Workflow and rollout](docs/RESULT_COMPILATION.md). This is distinct from
+legacy per-student result entry, which is now blocked for teachers.
+
 # Hope Horizon Academy — Student Results Management Portal
 
 ## Co-Administrators (2026-10)
