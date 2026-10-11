@@ -11,8 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     env:
-      NEXT_PUBLIC_SUPABASE_URL: https://example.supabase.co
-      NEXT_PUBLIC_SUPABASE_ANON_KEY: build-placeholder
+      NEXT_PUBLIC_SUPABASE_URL: https://iwfpdwihinhcwjgvmfei.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_QLi8sSbByVHa9luUvJFLeA_1ouCrR7Q
       SUPABASE_SERVICE_ROLE_KEY: build-placeholder
     steps:
       - name: Checkout

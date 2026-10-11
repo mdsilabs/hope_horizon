@@ -2,6 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database";
 import { canAccessSegment } from "@/lib/auth/rbac";
+import { getPublicSupabaseConfig } from "@/lib/supabase/config";
 
 const PROTECTED_SEGMENTS = [
   "admin", "teacher", "student", "parent", "principal", "vice-principal", "accountant",
@@ -24,10 +25,14 @@ export async function middleware(request: NextRequest) {
   const isProtectedSegment = PROTECTED_SEGMENTS.includes(firstSegment);
   if (!isProtectedSegment || isPublic) return NextResponse.next();
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("Routing middleware configuration error: Supabase environment variables missing.");
+  let supabaseUrl: string;
+  let supabaseAnonKey: string;
+  try {
+    const publicConfig = getPublicSupabaseConfig();
+    supabaseUrl = publicConfig.url;
+    supabaseAnonKey = publicConfig.key;
+  } catch (error) {
+    console.error("Routing middleware Supabase project configuration error:", error);
     return loginRedirect(request, pathname, "configuration");
   }
 

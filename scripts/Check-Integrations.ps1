@@ -76,23 +76,38 @@ function Row($name,$status,$detail) { [void]$grid.Rows.Add($name,$status,$detail
 $button.Add_Click({
     $button.Enabled=$false; $grid.Rows.Clear()
     try {
-        Row "Environment file" $(if(Test-Path $envFile){"OK"}else{"MISSING"}) ".env.local in project root"
-        foreach($key in @("NEXT_PUBLIC_SUPABASE_URL","NEXT_PUBLIC_SUPABASE_ANON_KEY","SUPABASE_SERVICE_ROLE_KEY","NEXT_PUBLIC_APP_URL")) {
-            Row $key $(if(Configured $key){"PRESENT"}else{"MISSING"}) "Value only checked, never revealed"
+        Row "Local overrides" $(if(Test-Path $envFile){"PRESENT"}else{"OPTIONAL"}) ".env.local is optional for public values; server secrets stay private"
+        $expectedUrl = "https://iwfpdwihinhcwjgvmfei.supabase.co"
+        $configPath = Join-Path $root "lib\supabase\config.ts"
+        $publicKey = ""
+        if (Test-Path $configPath) {
+            $source = Get-Content $configPath -Raw
+            if ($source -match 'SUPABASE_PUBLISHABLE_KEY\s*=\s*"([^"]+)"') {
+                $publicKey = $Matches[1]
+            }
         }
+        if(Configured "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY") {
+            $publicKey = $cfg["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"]
+        }
+        Row "Pinned project" $(if(Test-Path $configPath){"FOUND"}else{"MISSING"}) "supabase-cyclamen-park (iwfpdwihinhcwjgvmfei)"
+        Row "Public publishable key" $(if($publicKey -match '^sb_publishable_'){"PRESENT"}else{"MISSING"}) "Only a public key is read; the value is never displayed"
+        $serverSecret = (Configured "SUPABASE_SECRET_KEY") -or (Configured "SUPABASE_SERVICE_ROLE_KEY")
+        Row "Local server credential" $(if($serverSecret){"PRESENT"}else{"NOT SET"}) "For deployment, configure the secret through Vercel Environment Variables"
+        Row "App origin" $(if(Configured "NEXT_PUBLIC_APP_URL"){"PRESENT"}else{"LOCAL DEFAULT"}) "Deployed HTTPS origin required for email setup redirects"
+        $url = if(Configured "NEXT_PUBLIC_SUPABASE_URL"){$cfg["NEXT_PUBLIC_SUPABASE_URL"].TrimEnd('/')}else{$expectedUrl}
+        Row "Project URL matches" $(if($url -eq $expectedUrl){"OK"}else{"MISMATCH"}) "Will not test an unexpected project"
+
         foreach($tool in @("node","npm")) {
             $cmd = Get-Command $tool -ErrorAction SilentlyContinue
             Row $tool $(if($cmd){"FOUND"}else{"MISSING"}) "Installed command on system PATH"
         }
-        $url= if(Configured "NEXT_PUBLIC_SUPABASE_URL"){$cfg["NEXT_PUBLIC_SUPABASE_URL"].TrimEnd('/')}else{""}
-        if($url -and $url -match '^https://[a-z0-9.-]+$') {
-            $headers=@{}
-            if(Configured "NEXT_PUBLIC_SUPABASE_ANON_KEY") {$headers["apikey"]=$cfg["NEXT_PUBLIC_SUPABASE_ANON_KEY"]}
+        if($url -eq $expectedUrl -and $publicKey -match '^sb_publishable_') {
+            $headers=@{ "apikey" = $publicKey }
             $status = Request-Status "$url/auth/v1/health" $headers
             Row "Supabase Auth URL" $(if($status -eq 200){"OK"}else{"REVIEW"}) "HTTP status: $status"
             $status = Request-Status "$url/rest/v1/" $headers
             Row "Supabase REST URL" $(if($status -ge 200 -and $status -lt 400){"OK"}else{"REVIEW"}) "HTTP status: $status"
-        }else{Row "Supabase connectivity" "SKIPPED" "Enter a valid HTTPS Supabase URL"}
+        }else{Row "Supabase connectivity" "SKIPPED" "Resolve the public project URL/key mismatch first"}
         if(Configured "NEXT_PUBLIC_APP_URL"){
             $target=$cfg["NEXT_PUBLIC_APP_URL"].TrimEnd('/')
             if($target -match '^https?://'){

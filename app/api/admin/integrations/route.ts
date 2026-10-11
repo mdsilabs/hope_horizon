@@ -3,6 +3,7 @@ import { requireRole } from "@/lib/auth/requireSession";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { handleApiError } from "@/lib/utils/errors";
+import { getPublicSupabaseConfig, SUPABASE_PROJECT_NAME, SUPABASE_PROJECT_REF } from "@/lib/supabase/config";
 
 type Check = { name:string; status:"pass"|"warn"|"fail"; detail:string };
 export async function GET() {
@@ -10,12 +11,19 @@ export async function GET() {
     const session=await requireRole(["ADMIN"]);
     const checks:Check[]=[];
     const add=(name:string,status:Check["status"],detail:string)=>checks.push({name,status,detail});
-    const hasPublic=Boolean(process.env.NEXT_PUBLIC_SUPABASE_URL&&process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-    add("Supabase public configuration",hasPublic?"pass":"fail",
-      hasPublic?"Public URL and publishable/anon key are configured.":"Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY.");
-    const hasAdmin=Boolean(process.env.SUPABASE_SERVICE_ROLE_KEY);
+    let publicReady = false;
+    try {
+      getPublicSupabaseConfig();
+      publicReady = true;
+    } catch {
+      publicReady = false;
+    }
+    add("Supabase project identity", publicReady ? "pass" : "fail",
+      publicReady ? SUPABASE_PROJECT_NAME + " (" + SUPABASE_PROJECT_REF + ") is selected; public URL and publishable key are valid." :
+        "Unexpected public environment override. Confirm the project URL and publishable key.");
+    const hasAdmin=Boolean(process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY);
     add("Server administration key",hasAdmin?"pass":"fail",
-      hasAdmin?"Server-only administration credential is present.":"Set SUPABASE_SERVICE_ROLE_KEY server-side.");
+      hasAdmin?"Server-only administration credential is present.":"Set SUPABASE_SECRET_KEY (preferred) or SUPABASE_SERVICE_ROLE_KEY server-side.");
 
     const db=await createClient();
     const {data:school,error:schoolError}=await db.from("schools").select("id")
