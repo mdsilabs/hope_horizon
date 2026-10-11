@@ -178,7 +178,7 @@ export default function ClassReviewPage(){
       <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
        <input type="checkbox" className="mt-1 h-4 w-4" checked={confirmReview}
         disabled={!complete||reviewLocked||busy} onChange={e=>setConfirmReview(e.target.checked)}/>
-       I have reviewed every student's marks, confirmed all subject submissions and cleared all correction requests.
+       I have reviewed every student&apos;s marks, confirmed all subject submissions and cleared all correction requests.
       </label>
       <div className="mt-4 flex flex-wrap gap-3">
        <Button disabled={!complete||!confirmReview||reviewLocked||busy} isLoading={busy}
