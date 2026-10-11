@@ -12,7 +12,7 @@ export async function GET(request:NextRequest){
       throw new AppError("Invalid search or page number.",422);
     const db=await createClient();
     let query=db.from("users")
-      .select("id,name,email,role,phone,whatsapp_number,avatar_url,is_active,last_login_at",{count:"exact"})
+      .select("id,name,email,role,admin_tier,phone,whatsapp_number,avatar_url,is_active,last_login_at",{count:"exact"})
       .eq("school_id",session.profile.school_id);
     if(q)query=query.or("name.ilike.%"+q.replace(/[%,().\\]/g,"")+"%,email.ilike.%"+q.replace(/[%,().\\]/g,"")+"%");
     const {data,count,error}=await query.order("name").range((page-1)*25,page*25-1);

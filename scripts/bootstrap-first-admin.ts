@@ -97,7 +97,7 @@ async function main() {
       password: input.adminPassword,
       email_confirm: true,
       user_metadata: { name: input.adminName },
-      app_metadata: { school_id:school.id, role:"ADMIN", must_change_password:false },
+      app_metadata: { school_id:school.id, role:"ADMIN", admin_tier:"PRIMARY", must_change_password:false },
     });
     if (createError || !auth.user) {
       throw new Error("Admin authentication account was not created. Check for an existing email and confirm migration 0004 is installed.");
