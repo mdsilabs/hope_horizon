@@ -1,10 +1,14 @@
 import { z } from "zod";
 import { emailSchema } from "./common";
 
-export const coAdminCreateSchema = z.object({
+const common = z.object({
   fullName: z.string().trim().min(2).max(120),
   email: emailSchema,
-}).strict();
+});
+export const coAdminCreateSchema = z.discriminatedUnion("setupMethod",[
+  common.extend({setupMethod:z.literal("TEMPORARY_PASSWORD")}).strict(),
+  common.extend({setupMethod:z.literal("EMAIL_LINK")}).strict(),
+]);
 
 export const coAdminStatusSchema = z.object({
   isActive: z.boolean(),
