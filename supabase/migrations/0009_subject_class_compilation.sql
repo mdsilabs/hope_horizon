@@ -66,7 +66,16 @@ for select to authenticated using (
   )
 );
 
--- No Data API insert/update grants. All writes below use restricted RPCs.
+-- Prevent direct REST mutations of student term results. Service-role application
+-- routes and restricted SECURITY DEFINER compilation functions still work.
+-- Avoid bypassing the subject->class->head approval chain via legacy RLS writes.
+revoke insert,update,delete on public.results from authenticated,anon;
+revoke insert,update,delete on public.result_subject_scores from authenticated,anon;
+drop policy if exists "teachers can insert draft results for their assigned classes" on public.results;
+drop policy if exists "teachers can update their own draft results" on public.results;
+drop policy if exists "write scores if the caller can update the parent result" on public.result_subject_scores;
+
+-- No Data API insert/update grants on the new tables. All writes below use restricted RPCs.
 create or replace function public.hh_save_subject_markbook(
   p_class_id uuid,p_subject_id uuid,p_term_id uuid,p_scores jsonb,p_submit boolean
 ) returns integer language plpgsql security definer set search_path=''
@@ -154,6 +163,13 @@ begin
     raise exception 'Markbook was moved, submitted or changed by another teacher'
       using errcode='22023';
   end if;
+  insert into public.audit_logs(school_id,user_id,action,entity_type,metadata)
+    values(v_school,auth.uid(),
+      case when p_submit then 'RESULT_SUBMITTED'::public.audit_action
+        else 'RESULT_EDITED'::public.audit_action end,
+      'subject_markbook',
+      jsonb_build_object('classId',p_class_id,'subjectId',p_subject_id,'termId',p_term_id,
+        'studentCount',v_count,'submitted',p_submit));
   return v_count;
 end;
 $markbook$;
@@ -239,6 +255,9 @@ begin
   on conflict(class_id,term_id) do update
     set compiled_by=excluded.compiled_by,status='PENDING_APPROVAL',submitted_at=now(),
         decided_by=null,decided_at=null,decision_remarks=null;
+  insert into public.audit_logs(school_id,user_id,action,entity_type,entity_id,metadata)
+    values(v_school,auth.uid(),'RESULT_SUBMITTED','class_compilation',p_class_id,
+      jsonb_build_object('termId',p_term_id,'studentCount',v_students,'subjectCount',v_subjects));
   return v_students;
 end;
 $compile$;
@@ -284,6 +303,12 @@ begin
     update public.class_result_batches set status='RETURNED',decided_by=auth.uid(),
       decided_at=now(),decision_remarks=trim(p_remarks) where id=p_batch_id;
   end if;
+  insert into public.audit_logs(school_id,user_id,action,entity_type,entity_id,metadata)
+    values(v_school,auth.uid(),
+      case when p_action='APPROVE' then 'RESULT_APPROVED'::public.audit_action
+        else 'RESULT_EDITED'::public.audit_action end,
+      'class_result_batch',p_batch_id,
+      jsonb_build_object('decision',p_action,'remarks',p_remarks));
   return true;
 end;
 $decide$;
