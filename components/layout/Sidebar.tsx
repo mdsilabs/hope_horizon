@@ -38,6 +38,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "Integrations", href: "/admin/integrations", icon: Settings },
     { label: "Classes & Subjects", href: "/admin/classes", icon: BookOpen },
     { label: "Class Approvals", href: "/admin/class-approvals", icon: FileCheck2 },
+    { label: "Class Publication", href: "/admin/class-releases", icon: ClipboardCheck },
     { label: "Results", href: "/admin/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/admin/notifications", icon: Bell },
     { label: "Settings", href: "/admin/settings", icon: Settings },
@@ -45,6 +46,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   PRINCIPAL: [
     { label: "Dashboard", href: "/principal", icon: LayoutDashboard },
     { label: "Class Approvals", href: "/principal/class-approvals", icon: FileCheck2 },
+    { label: "Class Publication", href: "/principal/class-releases", icon: ClipboardCheck },
     { label: "Legacy Result Review", href: "/principal/approvals", icon: ClipboardCheck },
     { label: "Results Overview", href: "/principal/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/principal/notifications", icon: Bell },

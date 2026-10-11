@@ -121,11 +121,22 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["subject_markbooks"]["Row"]>;
         Relationships: [];
       };
+      class_report_entries: {
+        Row:{school_id:string;class_id:string;term_id:string;student_id:string;
+          attendance_present:number;attendance_absent:number;attendance_total_days:number;
+          teacher_remarks:string;recorded_by:string;updated_at:string};
+        Insert:Database["public"]["Tables"]["class_report_entries"]["Row"];
+        Update:Partial<Database["public"]["Tables"]["class_report_entries"]["Row"]>;
+        Relationships:[];
+      };
       class_result_batches: {
         Row: {
           id:string;school_id:string;class_id:string;academic_session_id:string;term_id:string;
           compiled_by:string;status:"PENDING_APPROVAL"|"APPROVED"|"RETURNED";
           submitted_at:string;decided_by:string|null;decided_at:string|null;decision_remarks:string|null;
+          release_state:"UNRELEASED"|"PUBLISHED"|"WITHDRAWN"|"LEGACY_MIXED";
+          published_by:string|null;published_at:string|null;withdrawn_by:string|null;withdrawn_at:string|null;
+          head_signature_name:string|null;head_signed_at:string|null;
         };
         Insert: Database["public"]["Tables"]["class_result_batches"]["Row"];
         Update: Partial<Database["public"]["Tables"]["class_result_batches"]["Row"]>;
@@ -521,6 +532,12 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_save_class_report_entries:{
+        Args:{p_class_id:string;p_term_id:string;p_entries:{
+          studentId:string;present:number;absent:number;totalDays:number;remark:string}[]};
+        Returns:number;
+      };
+      hh_release_class_batch:{Args:{p_batch_id:string;p_action:"PUBLISH"|"WITHDRAW"};Returns:number};
       hh_request_subject_correction: {
         Args:{p_class_id:string;p_subject_id:string;p_term_id:string;p_reason:string};Returns:string;
       };

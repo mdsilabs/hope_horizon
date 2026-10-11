@@ -376,6 +376,12 @@ export async function publishResult(session: CurrentSession, resultId: string): 
   if (result.status !== "APPROVED") {
     throw new ConflictError("Only approved results can be published.");
   }
+  const { data: compiled, error: compilationError } = await supabase.from("class_result_batches")
+    .select("id").eq("school_id",session.profile.school_id)
+    .eq("class_id",result.class_id).eq("term_id",result.term_id).maybeSingle();
+  if(compilationError)throw compilationError;
+  if(compiled)throw new ConflictError("Compiled class results must be released or withdrawn together from Class Publication.");
+
 
   const { data: updated, error } = await supabase
     .from("results")
@@ -446,6 +452,12 @@ export async function hideResult(session: CurrentSession, resultId: string): Pro
   if (result.status !== "PUBLISHED") {
     throw new ConflictError("Only published results can be hidden.");
   }
+  const { data: compiled, error: compilationError } = await supabase.from("class_result_batches")
+    .select("id").eq("school_id",session.profile.school_id)
+    .eq("class_id",result.class_id).eq("term_id",result.term_id).maybeSingle();
+  if(compilationError)throw compilationError;
+  if(compiled)throw new ConflictError("Compiled class results must be released or withdrawn together from Class Publication.");
+
 
   const { data: updated, error } = await supabase
     .from("results")

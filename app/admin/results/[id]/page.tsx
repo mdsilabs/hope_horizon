@@ -29,6 +29,10 @@ export default async function AdminResultDetailPage({ params }: { params: Promis
       </div>
 
       <ResultDetailCard result={detail} />
+      {["APPROVED","PUBLISHED","HIDDEN"].includes(detail.status)&&
+        <Link href={"/reports/"+id} className="inline-flex rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white">
+          Preview / Print report card
+        </Link>}
 
       {detail.status === "PENDING_APPROVAL" && !compiled && (
         <ApprovalActions resultId={id} backHref="/admin/results" />
@@ -37,13 +41,15 @@ export default async function AdminResultDetailPage({ params }: { params: Promis
       {compiled&&<div className="rounded-xl border border-brand-200 bg-brand-50 p-4 text-sm text-brand-800">
         This student belongs to a compiled class. For approval or returns, review the complete class.
         <Link href="/admin/class-approvals" className="ml-1 font-semibold underline">Class Approvals</Link>
+        <span className="mx-2">·</span>
+        <Link href="/admin/class-releases" className="font-semibold underline">Class Publication</Link>
       </div>}
-      <PublishHideActions
+      {!compiled && <PublishHideActions
         resultId={id}
         status={detail.status}
         backHref="/admin/results"
         canHide={session.profile.role === "ADMIN"}
-      />
+      />}
     </div>
   );
 }
