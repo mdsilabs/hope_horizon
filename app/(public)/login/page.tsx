@@ -41,7 +41,7 @@ function LoginForm() {
         setServerError(json?.error?.message || "Unable to sign in. Please try again.");
         return;
       }
-      router.push(redirectTo || json.homeRoute || "/");
+      router.push(json.passwordChangeRequired ? "/change-password" : (redirectTo || json.homeRoute || "/"));
       router.refresh();
     } catch {
       setServerError("Unable to reach the server. Please check your connection and try again.");

@@ -3,7 +3,7 @@ import { requireRole } from "@/lib/auth/requireSession";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { coAdminCreateSchema } from "@/lib/validations/co-admin";
-import { generateUnusedPassword, requestSetupEmail, requireProvisioningSecurity } from "@/lib/admin/account-onboarding";
+import { generateUnusedPassword, generateTemporaryPassword, requestSetupEmail, requireProvisioningSecurity } from "@/lib/admin/account-onboarding";
 import { AppError, ConflictError, handleApiError } from "@/lib/utils/errors";
 
 export async function GET(){
@@ -24,9 +24,12 @@ export async function GET(){
 export async function POST(request:NextRequest){
   try{
     const session=await requireRole(["ADMIN"]);
-    const {fullName,email}=coAdminCreateSchema.parse(await request.json());
+    const {fullName,email,setupMethod}=coAdminCreateSchema.parse(await request.json());
     const db=await createClient(),schoolId=session.profile.school_id;
     await requireProvisioningSecurity();
+    const {data:guardReady,error:guardError}=await db.rpc("hh_onboarding_guard_ready");
+    if(guardError || guardReady!==true)
+      throw new AppError("Install SQL migration 0012 before creating a Co-Admin.",503,"MIGRATION_REQUIRED");
     // Fail closed if migration 0008 (tier + deletion guard) is absent.
     const {data:owner,error:ownerError}=await db.from("users")
       .select("id,admin_tier").eq("school_id",schoolId).eq("role","ADMIN")
@@ -35,11 +38,13 @@ export async function POST(request:NextRequest){
       throw new AppError("A protected primary admin is required. Apply migration 0008.",503,"MIGRATION_REQUIRED");
 
     const admin=createAdminClient();
+    const temporaryPassword=setupMethod==="TEMPORARY_PASSWORD" ? generateTemporaryPassword() : null;
     const {data:created,error:createError}=await admin.auth.admin.createUser({
-      email,password:generateUnusedPassword(),email_confirm:true,
+      email,password:temporaryPassword ?? generateUnusedPassword(),email_confirm:true,
       user_metadata:{name:fullName},
       app_metadata:{
         school_id:schoolId,role:"ADMIN",admin_tier:"CO_ADMIN",must_change_password:true,
+        setup_method:setupMethod,
       },
     });
     if(createError || !created.user)
@@ -61,15 +66,18 @@ export async function POST(request:NextRequest){
 
     const {error:auditError}=await db.from("audit_logs").insert({
       school_id:schoolId,user_id:session.authUserId,action:"SYSTEM_SETTING_CHANGED",
-      entity_type:"co_admin",entity_id:id,metadata:{operation:"co_admin_created"},
+      entity_type:"co_admin",entity_id:id,metadata:{operation:"co_admin_created",setupMethod},
     });
     if(auditError)console.error("Co-Admin creation audit failed.");
-    const emailStatus=await requestSetupEmail(admin,email);
+    const emailStatus=setupMethod==="EMAIL_LINK" ? await requestSetupEmail(admin,email) : "not_requested";
     return NextResponse.json({
-      id,emailStatus,
-      message:emailStatus==="requested"
-        ?"Co-Admin account created. Password-setup email requested; confirm delivery."
-        :"Co-Admin account created. Configure your email provider and app URL, then resend setup.",
-    },{status:201});
+      id,email,setupMethod,emailStatus,
+      ...(temporaryPassword?{temporaryPassword}:{}),
+      message:temporaryPassword
+        ?"Co-Admin created without email. Copy the temporary password now; it cannot be retrieved later."
+        :emailStatus==="requested"
+          ?"Co-Admin created. Password-setup email requested; confirm delivery."
+          :"Co-Admin created, but no setup email was sent. Configure Supabase Auth SMTP and resend the link.",
+    },{status:201,headers:{"Cache-Control":"no-store, private"}});
   }catch(error){return handleApiError(error);}
 }

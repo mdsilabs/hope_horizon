@@ -532,6 +532,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_onboarding_guard_ready:{Args:Record<string,never>;Returns:boolean};
       hh_save_class_report_entries:{
         Args:{p_class_id:string;p_term_id:string;p_entries:{
           studentId:string;present:number;absent:number;totalDays:number;remark:string}[]};

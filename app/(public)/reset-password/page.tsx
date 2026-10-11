@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/Button";
 import { Alert } from "@/components/ui/Alert";
 
 const schema = z.object({
-  newPassword: passwordSchema,
+  newPassword: passwordSchema.min(12,"Use at least 12 characters"),
   confirmPassword: z.string(),
 }).refine(data=>data.newPassword===data.confirmPassword,{
   message:"Passwords do not match",path:["confirmPassword"],
@@ -75,8 +75,15 @@ export default function ResetPasswordPage(){
     if(!ready)return;
     setError(null);
     const supabase=createClient();
-    const {error:updateError}=await supabase.auth.updateUser({password:values.newPassword});
-    if(updateError){setError("Unable to update your password. The setup link may have expired.");return;}
+    const response=await fetch("/api/auth/set-password",{
+      method:"POST",headers:{"Content-Type":"application/json"},
+      body:JSON.stringify({flow:"RECOVERY",newPassword:values.newPassword}),cache:"no-store",
+    });
+    const body=await response.json();
+    if(!response.ok){
+      setError(body?.error?.message||"Unable to update your password. The setup link may have expired.");
+      return;
+    }
     await supabase.auth.signOut();
     setSuccess(true);
     router.replace("/login");
