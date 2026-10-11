@@ -1,5 +1,6 @@
 "use client";
 import {useEffect,useState,useCallback} from "react";
+import {usePathname} from "next/navigation";
 import {BookOpen,CheckCircle2,Printer,RefreshCw,Send,ShieldAlert,Undo2} from "lucide-react";
 import {Button} from "@/components/ui/Button";
 import {Card} from "@/components/ui/Card";
@@ -12,6 +13,7 @@ type Payload={batches:Batch[];canWithdraw:boolean};
 function getError(value:unknown){return (value as {error?:{message?:string}})?.error?.message||"Request failed.";}
 
 export function ClassReleaseBoard(){
+ const isPrincipal=usePathname().startsWith("/principal");
  const [batches,setBatches]=useState<Batch[]>([]);
  const [canWithdraw,setCanWithdraw]=useState(false);
  const [loading,setLoading]=useState(true),[busy,setBusy]=useState("");
@@ -100,7 +102,7 @@ export function ClassReleaseBoard(){
         <Undo2 className="h-4 w-4"/> Withdraw whole class
        </Button>}
        {(published||canRelease)&&<a
-        href={"/admin/results?status="+(published?"PUBLISHED":"APPROVED")}
+        href={(isPrincipal?"/principal/results":"/admin/results")+(isPrincipal?"":"?status="+(published?"PUBLISHED":"APPROVED"))}
         className="inline-flex items-center gap-1 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-brand-700">
         <Printer className="h-4 w-4"/> View student report links
        </a>}

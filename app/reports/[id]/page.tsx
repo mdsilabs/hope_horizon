@@ -69,7 +69,7 @@ export default async function PrintableReport({params}:{params:Promise<{id:strin
  return <main className="min-h-screen bg-slate-100 px-3 py-8 text-slate-900 print:bg-white print:p-0">
   <div className="mx-auto mb-4 flex max-w-[210mm] flex-wrap items-center justify-between gap-3 print:hidden">
    <Link href={session.profile.role==="STUDENT"?"/student/results":
-    session.profile.role==="PARENT"?"/parent/results":"/admin/results"}
+    session.profile.role==="PARENT"?"/parent/results":session.profile.role==="PRINCIPAL"?"/principal/results":"/admin/results"}
     className="text-sm font-medium text-brand-700 hover:underline">← Back to results</Link>
    <PrintReportButton/>
   </div>
