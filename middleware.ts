@@ -5,7 +5,7 @@ import { canAccessSegment } from "@/lib/auth/rbac";
 import { getPublicSupabaseConfig } from "@/lib/supabase/config";
 
 const PROTECTED_SEGMENTS = [
-  "admin", "teacher", "student", "parent", "principal", "vice-principal", "accountant",
+  "admin", "teacher", "student", "parent", "principal", "vice-principal", "accountant", "profile",
 ];
 const PUBLIC_PATHS = ["/", "/login", "/forgot-password", "/reset-password", "/result-verification"];
 
@@ -54,7 +54,7 @@ export async function middleware(request: NextRequest) {
 
     const { data: profile, error: profileError } = await supabase
       .from("users").select("role, is_active").eq("id", user.id).single();
-    if (profileError || !profile || !profile.is_active || !canAccessSegment(profile.role, firstSegment)) {
+    if (profileError || !profile || !profile.is_active || (firstSegment !== "profile" && !canAccessSegment(profile.role, firstSegment))) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     return response;

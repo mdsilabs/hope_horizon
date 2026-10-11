@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { Bell, ChevronDown, LogOut, Menu, User } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
@@ -61,6 +62,11 @@ export function Topbar({
               menuOpen ? "block" : "hidden"
             )}
           >
+            <Link href="/profile" onClick={()=>setMenuOpen(false)}
+              className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-600 hover:bg-surface-muted">
+              <User className="h-4 w-4"/>
+              My profile
+            </Link>
             <button
               onClick={onLogout}
               className="flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left text-sm text-slate-600 hover:bg-surface-muted"
