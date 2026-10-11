@@ -39,6 +39,8 @@ create table if not exists public.school_media_settings (
   updated_at timestamptz not null default now()
 );
 alter table public.school_media_settings enable row level security;
+-- Authenticated Data API requests still require SQL privileges in addition to RLS.
+grant select, insert, update on public.school_media_settings to authenticated;
 drop policy if exists "school admins read Cloudinary settings" on public.school_media_settings;
 create policy "school admins read Cloudinary settings" on public.school_media_settings
   for select to authenticated
