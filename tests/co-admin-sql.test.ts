@@ -23,3 +23,10 @@ test("inactive Co-Admin loses all school-scoped RLS privileges",()=>{
   assert.match(sql,/create or replace function public\.current_user_role\(\)/i);
   assert.match(sql,/where u\.id = \(select auth\.uid\(\)\) and u\.is_active/i);
 });
+
+test("SQL helper function bodies use matched PostgreSQL dollar quotes",()=>{
+  assert.match(sql,/as \$hh_school_id\$[\s\S]+?\$hh_school_id\$;/);
+  assert.match(sql,/as \$hh_user_role\$[\s\S]+?\$hh_user_role\$;/);
+  assert.doesNotMatch(sql,/\bas \$(?!\$|[a-zA-Z_])/i);
+  assert.match(sql,/admin_tier is not null and admin_tier in/);
+});
