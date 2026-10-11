@@ -94,7 +94,8 @@ export function Sidebar({ role, schoolName }: { role: UserRole; schoolName: stri
       </div>
       <nav className="flex-1 space-y-1 overflow-y-auto px-3 py-4 scrollbar-thin">
         {items.map((item) => {
-          const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+          const isActive = pathname === item.href ||
+            (item.href.split("/").filter(Boolean).length > 1 && pathname.startsWith(`${item.href}/`));
           const Icon = item.icon;
           return (
             <Link

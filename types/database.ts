@@ -475,6 +475,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_admin_replace_parent_children: { Args: { p_parent_id: string; p_student_ids: string[] }; Returns: boolean };
       hh_admin_replace_teacher_assignments: {
         Args: { p_teacher_id: string; p_class_ids: string[]; p_subject_assignments: { classId: string; subjectId: string }[] };
         Returns: boolean;

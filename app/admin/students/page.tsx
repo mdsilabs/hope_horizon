@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState, type FormEvent } from "react";
-import { GraduationCap, Plus, Search, X } from "lucide-react";
+import { GraduationCap, Plus, Search, X, Mail, UserPlus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
 import { Input } from "@/components/ui/Input";
@@ -12,6 +12,7 @@ type Student = {
   id: string; full_name: string; admission_number: string; registration_number: string | null;
   student_id: string | null; class_id: string; gender: "MALE" | "FEMALE" | "OTHER" | null;
   date_of_birth: string | null; passport_url: string | null; is_active: boolean;
+  user_id: string | null; users: {email:string}|null;
 };
 type Form = { fullName: string; admissionNumber: string; registrationNumber: string;
   studentId: string; classId: string; gender: string; dateOfBirth: string; passportUrl: string };
@@ -41,6 +42,8 @@ export default function StudentsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
+  const [loginStudent, setLoginStudent] = useState<Student | null>(null);
+  const [loginEmail, setLoginEmail] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -109,6 +112,28 @@ export default function StudentsPage() {
     finally { setBusy(false); }
   }
 
+  async function activateLogin(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (!loginStudent) return;
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await api<{message:string}>("/api/admin/students/" + loginStudent.id + "/account", {
+        method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify({email:loginEmail}),
+      });
+      setNotice(result.message);
+      setLoginStudent(null); setLoginEmail(""); setReloadKey(v=>v+1);
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not create login."); }
+    finally { setBusy(false); }
+  }
+  async function resendLogin(student: Student) {
+    setBusy(true); setError(""); setNotice("");
+    try {
+      const result = await api<{message:string}>("/api/admin/students/" + student.id + "/send-setup",{method:"POST"});
+      setNotice(result.message);
+    } catch (e) { setError(e instanceof Error ? e.message : "Could not request setup email."); }
+    finally { setBusy(false); }
+  }
+
   const classLabel = (id: string) => {
     const found = classes.find((c) => c.id === id);
     return found ? found.name + (found.arm ? " " + found.arm : "") : "Unassigned / inactive";
@@ -118,7 +143,7 @@ export default function StudentsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div><h1 className="text-2xl font-semibold text-slate-900">Students</h1>
-          <p className="mt-1 text-sm text-slate-500">Enrol pupils, allocate classes and manage active records.</p></div>
+          <p className="mt-1 text-sm text-slate-500">Enrol pupils, allocate classes and activate individual portal logins.</p></div>
         <Button onClick={startCreate} disabled={classes.length === 0}><Plus className="h-4 w-4" /> Enrol student</Button>
       </div>
       {error && <div role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{error}</div>}
@@ -150,6 +175,20 @@ export default function StudentsPage() {
           </div>
         </form>
       </Card>}
+      {loginStudent && <Card>
+        <div className="mb-3 flex items-start justify-between gap-3">
+          <div><h2 className="font-semibold">Activate student login</h2>
+            <p className="mt-1 text-sm text-slate-600">{loginStudent.full_name} · {loginStudent.admission_number}</p>
+            <p className="mt-1 text-xs text-slate-500">Creates an individual student account. A password-setup email will be requested; no password is shown or stored.</p>
+          </div>
+          <button type="button" aria-label="Close account setup" onClick={()=>setLoginStudent(null)}><X className="h-5 w-5"/></button>
+        </div>
+        <form onSubmit={activateLogin} className="flex flex-wrap items-end gap-3">
+          <div className="min-w-48 flex-1"><Input id="student-login-email" type="email" label="Student's email address" required
+            value={loginEmail} onChange={e=>setLoginEmail(e.target.value)} placeholder="student@example.com"/></div>
+          <Button type="submit" disabled={busy} isLoading={busy}><UserPlus className="h-4 w-4"/> Create login</Button>
+        </form>
+      </Card>}
       <Card>
         <form className="mb-4 flex flex-wrap items-end gap-3" onSubmit={(e) => { e.preventDefault(); setPage(1); setSearch(searchText.trim()); }}>
           <div className="min-w-44 flex-1"><Input label="Search by student name" value={searchText} maxLength={80}
@@ -166,13 +205,17 @@ export default function StudentsPage() {
             <table className="w-full min-w-[650px] text-left text-sm">
               <thead className="border-b bg-slate-50 text-xs uppercase text-slate-500"><tr>
                 <th className="p-3">Student</th><th className="p-3">Admission no.</th>
-                <th className="p-3">Class</th><th className="p-3">Status</th><th className="p-3">Actions</th>
+                <th className="p-3">Class</th><th className="p-3">Status</th><th className="p-3">Login</th><th className="p-3">Actions</th>
               </tr></thead>
               <tbody className="divide-y">{students.map((student) => <tr key={student.id}>
                 <td className="p-3 font-medium text-slate-900">{student.full_name}</td>
                 <td className="p-3">{student.admission_number}</td><td className="p-3">{classLabel(student.class_id)}</td>
                 <td className="p-3">{student.is_active ? "Active" : "Inactive"}</td>
+                <td className="p-3 text-xs">{student.user_id ? <><span className="font-medium text-green-700">Linked</span><span className="block text-slate-500">{student.users?.email}</span></> : "Not enabled"}</td>
                 <td className="space-x-3 p-3">
+                  {student.is_active && (student.user_id
+                    ? <button type="button" disabled={busy} className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline" onClick={()=>void resendLogin(student)}><Mail className="h-3 w-3"/> Email setup</button>
+                    : <button type="button" disabled={busy} className="inline-flex items-center gap-1 font-medium text-brand-600 hover:underline" onClick={()=>{setLoginStudent(student);setLoginEmail("");setError("");}}><UserPlus className="h-3 w-3"/> Create login</button>)}
                   <button type="button" className="font-medium text-brand-600 hover:underline" onClick={() => startEdit(student)}>Edit</button>
                   <button type="button" disabled={busy} className="font-medium text-slate-600 hover:underline"
                     onClick={() => void toggleActive(student)}>{student.is_active ? "Deactivate" : "Reactivate"}</button>

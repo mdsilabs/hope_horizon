@@ -31,7 +31,7 @@ export async function GET() {
     add("School database access",!schoolError&&!!school?"pass":"fail",
       !schoolError&&school?"Authenticated school record is reachable.":"School data is not available to this admin.");
     const tables=[
-      ["Teachers","teachers","id"],["Classes","classes","id"],["Subjects","subjects","id"],
+      ["Teachers","teachers","id"],["Parents","parents","id"],["Students","students","id"],["Classes","classes","id"],["Subjects","subjects","id"],
       ["Academic sessions","academic_sessions","id"],["Academic terms","terms","id"],
     ] as const;
     const results=await Promise.all(tables.map(async ([label,table,column])=>{
@@ -68,7 +68,7 @@ export async function GET() {
     const appUrl=process.env.NEXT_PUBLIC_APP_URL;
     let validUrl=false;
     try{if(appUrl){const u=new URL(appUrl);validUrl=u.protocol==="https:"||(u.protocol==="http:"&&u.hostname==="localhost");}}catch{}
-    add("Teacher onboarding callback",validUrl?"pass":"warn",
+    add("Staff and family onboarding callback",validUrl?"pass":"warn",
       validUrl?"Application URL is suitable for password-setup redirects. Ensure it is allowlisted in Supabase.":"Set NEXT_PUBLIC_APP_URL to the deployed HTTPS origin.");
     const smtpConfigured=["EMAIL_FROM","SMTP_HOST","SMTP_PORT","SMTP_USER","SMTP_PASSWORD"]
       .every(key=>Boolean(process.env[key]));
