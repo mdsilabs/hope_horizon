@@ -74,3 +74,54 @@ This migration does not automatically change or delete historical results.
 - Live Supabase migration, cross-school tests and role-specific classroom
   simulations **must be completed before a real-term rollout**. Passing
   GitHub build checks does not confirm a live school is configured correctly.
+
+## Class-teacher score matrix and sign-off (migration 0010)
+
+The improved class-teacher screen at `/teacher/compilation/[classId]` lets the
+class teacher inspect every student's CA, examination and total in a complete
+student-by-subject matrix, and see Missing / Draft / Submitted states.
+
+- Request a **subject-specific correction** with an explanation before compiling:
+  only that subject's submitted marks reopen; other subjects remain locked.
+- The subject teacher sees the correction request in Subject Markbook and
+  resubmits the entire corrected subject, and receives an in-app notification.
+- After the resubmission, the class teacher checks the marks and clicks
+  **Verify resubmission** to clear the flag.
+- The class teacher checks the matrix and explicitly **Signs off** the
+  complete class. Every subsequent mark change invalidates sign-off.
+- Database trigger **rejects any compilation without a fresh sign-off**,
+  including requests that bypass the UI.
+- All actions have audit records. Existing 0009 class batches are not altered.
+
+Apply migration `supabase/migrations/0010_class_review_signoff.sql` once,
+after 0009. Until it is applied, the new review page and sign-off cannot work.
+
+## Gmail SMTP setup
+
+**Portal notifications** use SMTP from the Next.js server via Nodemailer.
+Set Vercel's private server environment variables (not browser settings):
+
+```env
+EMAIL_PROVIDER=gmail
+EMAIL_FROM=your-school-gmail@gmail.com
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=465
+SMTP_USER=your-school-gmail@gmail.com
+SMTP_PASSWORD=your-gmail-app-password
+```
+
+- Gmail App Passwords require Google 2-Step Verification and may be unavailable
+  for some managed accounts. Use a **dedicated school sender account**.
+- Port 465 uses implicit TLS; 587 uses STARTTLS and is also supported.
+- The app does **not** store or reveal SMTP passwords in the Admin panel.
+- In Admin → Integrations, use **Test Gmail SMTP**. It sends a single
+  message to the authenticated Admin's email, with a five-minute cooldown.
+- Class-teacher correction requests and class submissions create IN_APP
+  notifications; configured Gmail SMTP additionally attempts email.
+  Failure to send an email does not reverse a successfully committed SQL action.
+- **Supabase Auth invitations and password recovery are configured separately.**
+  In Supabase Dashboard → Authentication → SMTP Settings, configure the
+  same Gmail SMTP sender and App Password and allowlist the site's recovery URL.
+  Vercel SMTP env vars alone do not configure Supabase Auth.
+- Gmail rate limits and anti-abuse controls apply; large-scale school mail
+  may need a dedicated transactional provider later.

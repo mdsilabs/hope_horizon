@@ -1,3 +1,15 @@
+## Class review and Gmail SMTP (migration 0010)
+
+Class teachers now verify a complete student-by-subject score matrix,
+request subject corrections and sign off before class submission. The
+database enforces sign-off on compilation. Install migration
+`0010_class_review_signoff.sql` after `0009`.
+
+Portal emails use **Gmail SMTP** (server-only credentials in Vercel),
+with a test button in Admin → Integrations. Supabase Auth SMTP is
+configured separately in the Supabase dashboard. See
+[Result compilation and Gmail configuration](docs/RESULT_COMPILATION.md).
+
 ## Subject-by-subject result compilation (2026-10)
 
 Migration `0009_subject_class_compilation.sql` introduces transactional markbooks

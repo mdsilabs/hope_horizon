@@ -3,6 +3,9 @@ import {requireRole} from "@/lib/auth/requireSession";
 import {createClient} from "@/lib/supabase/server";
 import {classCompileSchema} from "@/lib/validations/compilation";
 import {AppError,handleApiError} from "@/lib/utils/errors";
+import {createAdminClient} from "@/lib/supabase/admin";
+import {sendNotification} from "@/services/notificationService";
+import {gmailSmtpConfigured} from "@/lib/email/gmail-smtp";
 
 export async function GET(){
   try{
@@ -60,6 +63,22 @@ export async function POST(request:NextRequest){
         throw new AppError(error.message,422);
       throw error;
     }
+    try{
+      const privileged=createAdminClient();
+      const {data:heads}=await privileged.from("users").select("id")
+        .eq("school_id",(await requireRole(["TEACHER"])).profile.school_id)
+        .eq("role","PRINCIPAL").eq("is_active",true).limit(10);
+      const schoolId=(await requireRole(["TEACHER"])).profile.school_id;
+      for(const head of heads??[]){
+        const message="A class teacher has compiled and submitted a complete class for your approval. Open Class Approvals in the portal.";
+        await sendNotification({schoolId,recipientId:head.id,
+          title:"Class examination results awaiting approval",message,
+          type:"RESULT_SUBMITTED_FOR_APPROVAL",channel:"IN_APP"});
+        if(gmailSmtpConfigured())await sendNotification({schoolId,recipientId:head.id,
+          title:"Class examination results awaiting approval",message,
+          type:"RESULT_SUBMITTED_FOR_APPROVAL",channel:"EMAIL"});
+      }
+    }catch{console.error("Head-of-school notification dispatch incomplete.");}
     return NextResponse.json({count:data,message:"Class compiled and sent for head-of-school review."});
   }catch(e){return handleApiError(e);}
 }

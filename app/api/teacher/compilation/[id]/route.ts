@@ -4,6 +4,9 @@ import {createClient} from "@/lib/supabase/server";
 import {classReviewActionSchema} from "@/lib/validations/class-review";
 import {uuidString} from "@/lib/validations/common";
 import {AppError,handleApiError} from "@/lib/utils/errors";
+import {createAdminClient} from "@/lib/supabase/admin";
+import {sendNotification} from "@/services/notificationService";
+import {gmailSmtpConfigured} from "@/lib/email/gmail-smtp";
 
 async function classScope(classId:string,actorId:string,schoolId:string){
  const db=await createClient();
@@ -74,6 +77,26 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
       throw error;
     }
     value=data;
+    // In-app notice is always attempted. Gmail email is sent only when
+    // server SMTP credentials are configured. No student marks leave the portal.
+    try{
+      const privileged=createAdminClient();
+      const {data:assigned}=await privileged.from("teacher_subject_assignments")
+        .select("teacher_id,teachers(user_id,is_active)").eq("class_id",classId)
+        .eq("subject_id",action.subjectId).limit(20);
+      const recipientIds=Array.from(new Set((assigned??[])
+        .filter(a=>a.teachers?.is_active).map(a=>a.teachers!.user_id)))
+        .filter(id=>id!==session.authUserId);
+      const title="Subject marks returned for correction";
+      const message="Your submitted subject marks have been returned by the class teacher. Reason: "+action.reason+
+        ". Open Subject Markbook, correct the marks and resubmit.";
+      for(const recipientId of recipientIds){
+        await sendNotification({schoolId:session.profile.school_id,recipientId,title,message,
+          type:"OTHER",channel:"IN_APP"});
+        if(gmailSmtpConfigured())await sendNotification({schoolId:session.profile.school_id,
+          recipientId,title,message,type:"OTHER",channel:"EMAIL"});
+      }
+    }catch{console.error("Correction notifications could not all be delivered.");}
   } else if(action.action==="CLEAR_CORRECTION"){
     const {data,error}=await db.rpc("hh_clear_subject_correction",{p_request_id:action.requestId});
     if(error){

@@ -8,7 +8,8 @@ import {Select} from "@/components/ui/Select";
 type Assignment={classId:string;subjectId:string;className:string;subjectName:string;subjectCode:string;caMax:number;examMax:number};
 type Student={id:string;full_name:string;admission_number:string};
 type Mark={student_id:string;ca:number;exam:number;status:"DRAFT"|"SUBMITTED"};
-type Data={termId:string|null;assignments:Assignment[];students:Student[];marks:Mark[]};
+type Data={termId:string|null;assignments:Assignment[];students:Student[];marks:Mark[];
+ correction:{reason:string;requested_at:string}|null};
 type Score={ca:string;exam:string};
 function msg(value:unknown):string{return (value as {error?:{message?:string}})?.error?.message||"Request failed.";}
 export default function SubjectMarkbookPage(){
@@ -96,6 +97,10 @@ export default function SubjectMarkbookPage(){
         </Link>
       </div>
       {!data?.termId?<p className="mt-4 text-sm text-amber-700">Ask the administrator to activate the current term.</p>:null}
+      {data?.correction&&<p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
+        Class-teacher correction request: {data.correction.reason}.
+        Revise the marks and resubmit this complete subject.
+      </p>}
       {active?<p className="mt-3 text-sm text-slate-500">Maximum: CA {active.caMax}, examination {active.examMax}.
         {locked?<span className="ml-2 font-semibold text-green-700">Submitted and locked</span>:null}
       </p>:null}

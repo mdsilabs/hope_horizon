@@ -34,15 +34,21 @@ export async function GET(request:NextRequest){
     if(!assignments.some(a=>a.classId===classId&&a.subjectId===subjectId))
       throw new AppError("This class and subject are not assigned to you.",403);
     if(!school?.current_term_id)throw new AppError("No active term. Ask your school administrator.",422);
-    const [{data:students,error:studentsError},{data:marks,error:marksError}]=await Promise.all([
+    const [{data:students,error:studentsError},{data:marks,error:marksError},
+     {data:flags,error:flagsError}]=await Promise.all([
       db.from("students").select("id,full_name,admission_number").eq("school_id",schoolId)
         .eq("class_id",classId).eq("is_active",true).order("full_name").limit(250),
       db.from("subject_markbooks").select("student_id,ca,exam,status")
         .eq("school_id",schoolId).eq("class_id",classId).eq("subject_id",subjectId)
-        .eq("term_id",school.current_term_id).limit(250),
+         .eq("term_id",school.current_term_id).limit(250),
+      db.from("class_subject_corrections").select("reason,requested_at")
+        .eq("school_id",schoolId).eq("class_id",classId).eq("subject_id",subjectId)
+        .eq("term_id",school.current_term_id).is("resolved_at",null)
+        .order("requested_at",{ascending:false}).limit(1),
     ]);
-    if(studentsError||marksError)throw studentsError||marksError;
-    return NextResponse.json({termId:school.current_term_id,assignments,students:students??[],marks:marks??[]});
+    if(studentsError||marksError||flagsError)throw studentsError||marksError||flagsError;
+    return NextResponse.json({termId:school.current_term_id,assignments,students:students??[],marks:marks??[],
+      correction:flags?.[0]??null});
   }catch(e){return handleApiError(e);}
 }
 export async function POST(request:NextRequest){

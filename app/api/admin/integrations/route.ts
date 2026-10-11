@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { handleApiError } from "@/lib/utils/errors";
 import { getPublicSupabaseConfig, SUPABASE_PROJECT_NAME, SUPABASE_PROJECT_REF } from "@/lib/supabase/config";
+import {gmailSmtpConfigured} from "@/lib/email/gmail-smtp";
 
 type Check = { name:string; status:"pass"|"warn"|"fail"; detail:string };
 export async function GET() {
@@ -79,10 +80,12 @@ export async function GET() {
     try{if(appUrl){const u=new URL(appUrl);validUrl=u.protocol==="https:"||(u.protocol==="http:"&&u.hostname==="localhost");}}catch{}
     add("Staff and family onboarding callback",validUrl?"pass":"warn",
       validUrl?"Application URL is suitable for password-setup redirects. Ensure it is allowlisted in Supabase.":"Set NEXT_PUBLIC_APP_URL to the deployed HTTPS origin.");
-    const smtpConfigured=["EMAIL_FROM","SMTP_HOST","SMTP_PORT","SMTP_USER","SMTP_PASSWORD"]
-      .every(key=>Boolean(process.env[key]));
-    add("Email provider configuration",smtpConfigured?"warn":"warn",
-      smtpConfigured?"SMTP variables present; actual email delivery NOT tested.":"SMTP variables incomplete. Supabase Auth SMTP must be configured separately.");
+    const smtpConfigured=gmailSmtpConfigured();
+    add("Gmail SMTP for school notifications",smtpConfigured?"pass":"warn",
+      smtpConfigured?"Gmail SMTP credentials and TLS endpoint are configured; use Test Gmail SMTP to verify delivery.":
+        "Configure EMAIL_PROVIDER=gmail, EMAIL_FROM, SMTP_HOST=smtp.gmail.com, SMTP_PORT=465, SMTP_USER and SMTP_PASSWORD in Vercel.");
+    add("Supabase Auth outgoing mail","warn",
+      "Account invitations and password recovery use Supabase Auth's separate SMTP settings. Configure Gmail SMTP in the Supabase Auth dashboard too.");
     const whatsAppConfigured=["WHATSAPP_API_TOKEN","WHATSAPP_PHONE_NUMBER_ID"].every(key=>Boolean(process.env[key]));
     add("WhatsApp configuration","warn",whatsAppConfigured?
       "WhatsApp variables are present; provider delivery NOT tested.":"WhatsApp is not yet configured; provider delivery is not implemented.");
