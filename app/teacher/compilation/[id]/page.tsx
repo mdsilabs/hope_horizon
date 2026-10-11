@@ -188,7 +188,7 @@ export default function ClassReviewPage(){
      <div className="min-w-0 flex-1">
       <h2 className="font-semibold">Final class-teacher sign-off</h2>
       <p className="mt-1 text-sm text-slate-600">
-       Verify each student's marks, attendance and teacher remarks. Subsequent changes cancel sign-off.
+       Verify each student&apos;s marks, attendance and teacher remarks. Subsequent changes cancel sign-off.
       </p>
       {review.signoff&&<p className="mt-2 text-sm font-semibold text-green-700">
        Signed off on {new Date(review.signoff.reviewed_at).toLocaleString()}.
