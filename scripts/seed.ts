@@ -35,12 +35,13 @@ async function createAuthUser(
   schoolId: string
 ) {
   // The on_auth_user_created trigger (0003_auth_sync_trigger.sql) copies
-  // this metadata into public.users automatically.
+  // trusted app_metadata plus the display name into public.users automatically.
   const { data, error } = await supabase.auth.admin.createUser({
     email,
     password: DEFAULT_PASSWORD,
     email_confirm: true,
-    user_metadata: { name, role, school_id: schoolId, must_change_password: true },
+    user_metadata: { name },
+    app_metadata: { role, school_id: schoolId, must_change_password: true },
   });
   if (error || !data.user) throw new Error(`Failed to create auth user ${email}: ${error?.message}`);
   return data.user.id;

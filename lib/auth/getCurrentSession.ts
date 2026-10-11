@@ -9,27 +9,18 @@ export interface CurrentSession {
 }
 
 /**
- * Reads the current authenticated user (via the Supabase session cookie)
- * and their public.users profile row. Returns null if not signed in or
- * if no profile exists yet (e.g. the auth.users -> public.users sync
- * trigger hasn't run, which shouldn't normally happen — see
- * supabase/migrations/0003_auth_sync_trigger.sql).
- *
- * Every query made afterwards through the same server client is subject
- * to Row Level Security, so this function does not need to duplicate
- * authorization logic — RLS policies (supabase/migrations/0002_rls_policies.sql)
- * are the real enforcement point.
+ * Read the session/profile through RLS. Deactivated profiles are not
+ * authorised, even when their Supabase Auth cookie remains valid.
  */
 export async function getCurrentSession(): Promise<CurrentSession | null> {
   const supabase = await createClient();
   const {
     data: { user },
   } = await supabase.auth.getUser();
-
   if (!user) return null;
 
   const { data: profile } = await supabase.from("users").select("*").eq("id", user.id).single();
-  if (!profile) return null;
+  if (!profile || !profile.is_active) return null;
 
   return { authUserId: user.id, profile };
 }

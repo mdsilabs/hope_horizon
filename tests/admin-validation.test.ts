@@ -16,7 +16,7 @@ test("rejects injecting class-teacher IDs into class creation", () => {
 });
 test("accepts student enrolment without portal credentials", () => {
   const student = adminStudentCreateSchema.parse({ fullName: "Ada Okoro", admissionNumber: "HH/003", classId: schoolClassId });
-  assert.equal(student.parentIds, undefined);
+  assert.equal(Object.hasOwn(student, "parentIds"), false);
 });
 test("rejects parent IDs until verified linking is implemented", () => {
   assert.equal(adminStudentCreateSchema.safeParse({
