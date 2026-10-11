@@ -1,3 +1,13 @@
+## Class-wide publication and printable report cards (migration 0011)
+
+Class teachers now enter attendance and teacher remarks for every pupil,
+then sign off the class. After head-of-school approval, Admin/Principal
+can publish the entire class atomically. Students and parents can print
+their authorized report card, including school branding, subject results,
+attendance, remarks, electronic head approval, and QR verification.
+Install `supabase/migrations/0011_class_release_report_cards.sql`
+after migration 0010. See [Class publication and report cards](docs/CLASS_PUBLICATION_REPORT_CARDS.md).
+
 ## Class review and Gmail SMTP (migration 0010)
 
 Class teachers now verify a complete student-by-subject score matrix,

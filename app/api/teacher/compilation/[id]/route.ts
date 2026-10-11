@@ -34,7 +34,7 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
   const classId=uuidString.parse((await params).id);
   const {db,termId,cls}=await classScope(classId,session.authUserId,session.profile.school_id);
   const schoolId=session.profile.school_id;
-  const [students,subjects,marks,corrections,signoff,batch]=await Promise.all([
+  const [students,subjects,marks,corrections,signoff,batch,reportEntries]=await Promise.all([
    db.from("students").select("id,full_name,admission_number").eq("school_id",schoolId)
      .eq("class_id",classId).eq("is_active",true).order("full_name").limit(250),
    db.from("class_subjects").select("subject_id,subjects!inner(name,code,is_active)")
@@ -48,15 +48,17 @@ export async function GET(_request:NextRequest,{params}:{params:Promise<{id:stri
      .eq("school_id",schoolId).eq("class_id",classId).eq("term_id",termId).maybeSingle(),
    db.from("class_result_batches").select("id,status,decision_remarks")
      .eq("school_id",schoolId).eq("class_id",classId).eq("term_id",termId).maybeSingle(),
+   db.from("class_report_entries").select("student_id,attendance_present,attendance_absent,attendance_total_days,teacher_remarks")
+     .eq("school_id",schoolId).eq("class_id",classId).eq("term_id",termId).limit(250),
   ]);
-  for(const res of [students,subjects,marks,corrections,signoff,batch])
+  for(const res of [students,subjects,marks,corrections,signoff,batch,reportEntries])
    if(res.error)throw new AppError("Review records could not be loaded. Apply migration 0010.",503);
   const orderedSubjects=(subjects.data??[]).map(item=>({
    id:item.subject_id,name:item.subjects!.name,code:item.subjects!.code
   }));
   return NextResponse.json({className:cls.name+(cls.arm?" "+cls.arm:""),termId,
    students:students.data??[],subjects:orderedSubjects,marks:marks.data??[],
-   corrections:corrections.data??[],signoff:signoff.data,batch:batch.data});
+   corrections:corrections.data??[],signoff:signoff.data,batch:batch.data,reportEntries:reportEntries.data??[]});
  }catch(e){return handleApiError(e);}
 }
 

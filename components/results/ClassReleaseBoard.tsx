@@ -62,7 +62,7 @@ export function ClassReleaseBoard(){
     <p className="text-sm text-slate-600">
      The server checks head-of-school approval, the complete enrolled class, subject scores,
      attendance, remarks and electronic approval attribution. If any record is incomplete,
-     no student's result is released. Gmail mass delivery is deliberately excluded from
+     no student&apos;s result is released. Gmail mass delivery is deliberately excluded from
      the publication transaction; in-app notifications are created for linked families.
     </p>
    </div>

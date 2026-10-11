@@ -49,6 +49,28 @@ update public.class_result_batches b
  from public.users u where u.id=b.decided_by and b.status='APPROVED'
    and b.head_signature_name is null and b.decided_at is not null;
 
+-- Released, head-approved class attribution is visible to a student or
+-- linked parent ONLY for a published result they can already access.
+create policy "Families see approval for own published class result"
+ on public.class_result_batches for select to authenticated
+ using (
+  school_id=(select public.current_user_school_id()) and release_state='PUBLISHED'
+  and exists(
+   select 1 from public.results r
+   where r.school_id=class_result_batches.school_id
+    and r.class_id=class_result_batches.class_id
+    and r.term_id=class_result_batches.term_id
+    and r.status='PUBLISHED'::public.result_status
+    and (
+     ((select public.current_user_role())='STUDENT' and
+       r.student_id=(select public.current_student_id()))
+     or ((select public.current_user_role())='PARENT' and
+       exists(select 1 from public.parent_students ps
+        where ps.student_id=r.student_id and ps.parent_id=(select public.current_parent_id())))
+    )
+  )
+ );
+
 -- Snapshot the real approving user's display name and decision timestamp.
 -- This is an electronic approval attribution, NOT a scanned or drawn signature.
 create or replace function public.hh_stamp_head_approval()
@@ -137,6 +159,28 @@ end;
 $entries$;
 revoke all on function public.hh_save_class_report_entries(uuid,uuid,jsonb) from public,anon;
 grant execute on function public.hh_save_class_report_entries(uuid,uuid,jsonb) to authenticated;
+
+-- Sign-off requires attendance and remarks from every active pupil.
+create or replace function public.hh_guard_report_signoff()
+returns trigger language plpgsql security definer set search_path=''
+as $signguard$
+declare v_students integer;v_entries integer;
+begin
+ select count(*) into v_students from public.students st
+  where st.school_id=new.school_id and st.class_id=new.class_id and st.is_active;
+ select count(*) into v_entries from public.class_report_entries e
+  join public.students st on st.id=e.student_id and st.is_active
+    and st.school_id=new.school_id and st.class_id=new.class_id
+  where e.school_id=new.school_id and e.class_id=new.class_id and e.term_id=new.term_id;
+ if v_students=0 or v_entries<>v_students then
+  raise exception 'Enter attendance and remarks for every pupil before signing off'
+   using errcode='22023';end if;
+ return new;
+end;
+$signguard$;
+revoke all on function public.hh_guard_report_signoff() from public,anon,authenticated;
+create trigger hh_guard_report_signoff before insert or update on public.class_result_review_signoffs
+ for each row execute function public.hh_guard_report_signoff();
 
 -- Before compilation: original migration 0010 checks score signoff.
 -- Also refuse incomplete attendance/remarks in the very same DB transaction.
@@ -256,7 +300,7 @@ begin
  if p_action='PUBLISH' then
   update public.results set status='PUBLISHED',published_by=auth.uid(),
    published_at=now(),hidden_by=null,hidden_at=null,
-   qr_verification_code=coalesce(qr_verification_code,encode(gen_random_bytes(16),'hex'))
+   qr_verification_code=coalesce(qr_verification_code,replace(gen_random_uuid()::text,'-',''))
   where school_id=v_school and class_id=b.class_id and term_id=b.term_id and status='APPROVED';
   get diagnostics v_written=row_count;
   if v_written<>v_students then raise exception 'Class changed during publication' using errcode='22023';end if;

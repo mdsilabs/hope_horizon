@@ -10,7 +10,8 @@ type Student={id:string;full_name:string;admission_number:string};
 type Subject={id:string;name:string;code:string};
 type Mark={student_id:string;subject_id:string;ca:number;exam:number;status:"DRAFT"|"SUBMITTED";updated_at:string};
 type Correction={id:string;subject_id:string;reason:string;requested_at:string;resolved_at:string|null};
-type Review={className:string;termId:string;students:Student[];subjects:Subject[];marks:Mark[];
+type ReportEntry={student_id:string;attendance_present:number;attendance_absent:number;attendance_total_days:number;teacher_remarks:string};
+type Review={className:string;termId:string;students:Student[];subjects:Subject[];marks:Mark[];reportEntries:ReportEntry[];
  corrections:Correction[];signoff:{reviewed_at:string;reviewed_by:string;checked_rows:number}|null;
  batch:{status:string;decision_remarks:string|null}|null};
 function message(value:unknown){return (value as {error?:{message?:string}})?.error?.message||"Request failed.";}
@@ -39,7 +40,11 @@ export default function ClassReviewPage(){
  const expected=(review?.students.length??0)*(review?.subjects.length??0);
  const submitted=(review?.students??[]).reduce((count,st)=>count+(review?.subjects??[])
   .filter(sub=>marks.get(st.id+":"+sub.id)?.status==="SUBMITTED").length,0);
- const complete=expected>0&&submitted===expected&&openFlags.size===0;
+ const attendanceComplete=!!review && review.students.length>0 &&
+  review.students.every(student=>review.reportEntries.some(entry=>entry.student_id===student.id &&
+    entry.attendance_present+entry.attendance_absent===entry.attendance_total_days &&
+    entry.teacher_remarks.trim().length>=3));
+ const complete=expected>0&&submitted===expected&&openFlags.size===0&&attendanceComplete;
  const reviewLocked=review?.batch?.status==="PENDING_APPROVAL"||review?.batch?.status==="APPROVED";
  async function action(body:Record<string,unknown>,success:string){
   setBusy(true);setError("");setNotice("");
@@ -94,6 +99,19 @@ export default function ClassReviewPage(){
     <Card><p className="text-sm text-slate-500">Open corrections</p>
      <p className="mt-1 text-2xl font-semibold">{openFlags.size}</p></Card>
    </div>
+   <Card className="flex flex-wrap items-center justify-between gap-3">
+    <div>
+     <h2 className="font-semibold">Attendance and class-teacher remarks</h2>
+     <p className="mt-1 text-sm text-slate-600">
+      {review.reportEntries.length} of {review.students.length} student reports recorded.
+      {attendanceComplete?" Ready for class sign-off.":" Complete every pupil before signing off."}
+     </p>
+    </div>
+    <Link href={"/teacher/compilation/"+classId+"/attendance"}
+     className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white">
+     Enter attendance and remarks
+    </Link>
+   </Card>
    {review.batch&&<p className="rounded-xl bg-blue-50 p-4 text-sm text-blue-900">
     Batch status: <strong>{review.batch.status.replaceAll("_"," ")}</strong>.
     {review.batch.decision_remarks?" Head's feedback: "+review.batch.decision_remarks:""}
@@ -170,7 +188,7 @@ export default function ClassReviewPage(){
      <div className="min-w-0 flex-1">
       <h2 className="font-semibold">Final class-teacher sign-off</h2>
       <p className="mt-1 text-sm text-slate-600">
-       Verify each student and subject before confirming. Any subsequent correction or mark edit cancels this sign-off.
+       Verify each student's marks, attendance and teacher remarks. Subsequent changes cancel sign-off.
       </p>
       {review.signoff&&<p className="mt-2 text-sm font-semibold text-green-700">
        Signed off on {new Date(review.signoff.reviewed_at).toLocaleString()}.
@@ -178,7 +196,7 @@ export default function ClassReviewPage(){
       <label className="mt-4 flex cursor-pointer items-start gap-2 text-sm text-slate-700">
        <input type="checkbox" className="mt-1 h-4 w-4" checked={confirmReview}
         disabled={!complete||reviewLocked||busy} onChange={e=>setConfirmReview(e.target.checked)}/>
-       I have reviewed every student&apos;s marks, confirmed all subject submissions and cleared all correction requests.
+       I have reviewed every student&apos;s marks, attendance and remarks, confirmed submissions and cleared correction requests.
       </label>
       <div className="mt-4 flex flex-wrap gap-3">
        <Button disabled={!complete||!confirmReview||reviewLocked||busy} isLoading={busy}
