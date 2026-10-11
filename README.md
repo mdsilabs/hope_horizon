@@ -1,5 +1,17 @@
 # Hope Horizon Academy — Student Results Management Portal
 
+## Teacher and academic setup (2026-10)
+
+Administrator features now include `/admin/teachers`, `/admin/academic`, and
+`/admin/integrations`. Apply migrations **0004 and 0005** in order after the
+original three, configure `NEXT_PUBLIC_APP_URL`, service-role key, and Supabase
+Auth SMTP. For the Windows integration GUI, double-click
+`scripts/check-integrations.cmd` in a cloned repository.
+
+See [Teacher, academic and integration setup](docs/TEACHER_ACADEMIC_SETUP.md).
+
+
+
 A multi-role results management portal built with **Next.js (App Router,
 TypeScript)**, **Supabase (Postgres + Auth)**, and **Tailwind CSS**.
 
@@ -42,11 +54,13 @@ cp .env.example .env.local
 #   SUPABASE_SERVICE_ROLE_KEY  (server-only — never expose to the browser)
 
 # 3. Apply the database schema (if not already applied to your project)
-# The three migrations in supabase/migrations/ can be run via the Supabase
+# The five migrations in supabase/migrations/ can be run via the Supabase
 # CLI (`supabase db push`) or pasted into the SQL editor in order:
 #   0001_init.sql            — tables, enums, indexes
 #   0002_rls_policies.sql    — Row Level Security policies
-#   0003_auth_sync_trigger.sql — keeps public.users in sync with auth.users
+#   0003_auth_sync_trigger.sql — initial profile sync trigger
+#   0004_harden_account_provisioning.sql — trusted account authorization metadata
+#   0005_teacher_academic_workflows.sql — assignment and period transactions
 
 # 4. Seed demo data (creates one school + one auth user per role)
 npm run seed

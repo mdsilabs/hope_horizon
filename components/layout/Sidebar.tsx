@@ -29,6 +29,8 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "Dashboard", href: "/admin", icon: LayoutDashboard },
     { label: "Students", href: "/admin/students", icon: GraduationCap },
     { label: "Teachers", href: "/admin/teachers", icon: Users },
+    { label: "Academic Sessions", href: "/admin/academic", icon: BookOpen },
+    { label: "Integrations", href: "/admin/integrations", icon: Settings },
     { label: "Classes & Subjects", href: "/admin/classes", icon: BookOpen },
     { label: "Results", href: "/admin/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/admin/notifications", icon: Bell },
