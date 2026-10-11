@@ -4,6 +4,9 @@ import {createClient} from "@/lib/supabase/server";
 import {markbookSaveSchema} from "@/lib/validations/compilation";
 import {uuidString} from "@/lib/validations/common";
 import {AppError,handleApiError} from "@/lib/utils/errors";
+import {createAdminClient} from "@/lib/supabase/admin";
+import {sendNotification} from "@/services/notificationService";
+import {gmailSmtpConfigured} from "@/lib/email/gmail-smtp";
 
 export async function GET(request:NextRequest){
   try{
@@ -65,6 +68,29 @@ export async function POST(request:NextRequest){
       if(["42501","22023","23514","23503"].includes(error.code))
         throw new AppError(error.message,422);
       throw error;
+    }
+    if(input.submit){
+      try{
+        const privileged=createAdminClient();
+        const {data:flags}=await privileged.from("class_subject_corrections")
+          .select("id").eq("class_id",input.classId).eq("subject_id",input.subjectId)
+          .eq("term_id",input.termId).is("resolved_at",null).limit(1);
+        if(flags?.length){
+          const {data:assigned}=await privileged.from("teacher_classes")
+            .select("teachers(user_id,is_active)").eq("class_id",input.classId).limit(20);
+          const {profile,authUserId}=await requireRole(["TEACHER"]);
+          const recipients=Array.from(new Set((assigned??[]).filter(a=>a.teachers?.is_active)
+            .map(a=>a.teachers!.user_id))).filter(id=>id!==authUserId);
+          const title="Corrected subject marks resubmitted";
+          const message="A subject teacher has resubmitted marks for a returned subject. Open the class score matrix and verify the corrections before signing off.";
+          for(const recipientId of recipients){
+            await sendNotification({schoolId:profile.school_id,recipientId,title,message,
+              type:"OTHER",channel:"IN_APP"});
+            if(gmailSmtpConfigured())await sendNotification({schoolId:profile.school_id,recipientId,
+              title,message,type:"OTHER",channel:"EMAIL"});
+          }
+        }
+      }catch{console.error("Resubmission notification dispatch incomplete.");}
     }
     return NextResponse.json({count:data,status:input.submit?"SUBMITTED":"DRAFT"});
   }catch(e){return handleApiError(e);}

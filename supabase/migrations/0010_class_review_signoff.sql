@@ -175,6 +175,14 @@ begin
  where m.school_id=v_school and m.class_id=p_class_id and m.term_id=p_term_id and m.status='SUBMITTED';
  if v_expected=0 or v_submitted<>v_expected
  then raise exception 'All assigned subjects must be submitted for all active students' using errcode='22023'; end if;
+ if exists(select 1 from public.subject_markbooks m
+   where m.school_id=v_school and m.class_id=p_class_id and m.term_id=p_term_id
+     and m.status='SUBMITTED' and
+      (not exists(select 1 from public.students st where st.id=m.student_id
+        and st.school_id=v_school and st.class_id=p_class_id and st.is_active)
+       or not exists(select 1 from public.class_subjects cs join public.subjects sub on sub.id=cs.subject_id
+        where cs.class_id=p_class_id and cs.subject_id=m.subject_id and sub.is_active)))
+ then raise exception 'Outdated subject marks must be reconciled after class or subject changes' using errcode='22023'; end if;
  insert into public.class_result_review_signoffs(class_id,term_id,school_id,reviewed_by,reviewed_at,checked_rows)
  values(p_class_id,p_term_id,v_school,auth.uid(),now(),v_expected)
  on conflict(class_id,term_id) do update
@@ -204,6 +212,15 @@ begin
    join public.class_subjects cs on cs.class_id=new.class_id and cs.subject_id=m.subject_id
    join public.subjects s on s.id=m.subject_id and s.is_active
    where m.school_id=new.school_id and m.class_id=new.class_id and m.term_id=new.term_id and m.status='SUBMITTED';
+ if exists(select 1 from public.subject_markbooks m
+  where m.school_id=new.school_id and m.class_id=new.class_id and m.term_id=new.term_id
+    and m.status='SUBMITTED' and
+     (not exists(select 1 from public.students st where st.id=m.student_id
+        and st.school_id=new.school_id and st.class_id=new.class_id and st.is_active)
+      or not exists(select 1 from public.class_subjects cs join public.subjects sub on sub.id=cs.subject_id
+        where cs.class_id=new.class_id and cs.subject_id=m.subject_id and sub.is_active)))
+ then raise exception 'Stale subject marks prevent class compilation'
+   using errcode='22023'; end if;
  if v_expected=0 or v_count<>v_expected or not exists(
   select 1 from public.class_result_review_signoffs r
    where r.school_id=new.school_id and r.class_id=new.class_id and r.term_id=new.term_id

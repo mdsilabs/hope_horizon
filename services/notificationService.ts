@@ -67,7 +67,8 @@ export async function sendNotification(input: SendNotificationInput) {
     }
   } catch (err) {
     status = "FAILED";
-    failureReason = err instanceof Error ? err.message : "Unknown delivery failure";
+    failureReason = input.channel === "IN_APP" ? "Could not store notification" : "Message delivery failed";
+    if(input.channel==="EMAIL")console.error("[notificationService] Gmail SMTP dispatch failed.");
   }
 
   await supabase
