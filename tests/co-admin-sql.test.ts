@@ -18,3 +18,8 @@ test("SQL requires trusted app metadata for newly created CO_ADMIN accounts",()=
   assert.match(sql,/raw_app_meta_data ->> 'admin_tier'/);
   assert.match(sql,/elsif v_tier = 'CO_ADMIN'/);
 });
+test("inactive Co-Admin loses all school-scoped RLS privileges",()=>{
+  assert.match(sql,/create or replace function public\.current_user_school_id\(\)/i);
+  assert.match(sql,/create or replace function public\.current_user_role\(\)/i);
+  assert.match(sql,/where u\.id = \(select auth\.uid\(\)\) and u\.is_active/i);
+});

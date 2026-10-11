@@ -109,6 +109,22 @@ create trigger hh_admin_identity_guard
   before insert or update or delete on public.users
   for each row execute function public.hh_guard_admin_identity();
 
+-- An inactive Co-Admin might retain an unexpired Supabase JWT.
+-- Return no school and no app role for inactive profiles so RLS rejects
+-- their direct PostgREST requests, even when bypassing the Next.js UI.
+create or replace function public.current_user_school_id()
+returns uuid language sql stable security definer set search_path = ''
+as $
+  select u.school_id from public.users u
+  where u.id = (select auth.uid()) and u.is_active;
+$;
+create or replace function public.current_user_role()
+returns public.user_role language sql stable security definer set search_path = ''
+as $
+  select u.role from public.users u
+  where u.id = (select auth.uid()) and u.is_active;
+$;
+
 commit;
 
 -- Check the existing administrators' designation:
