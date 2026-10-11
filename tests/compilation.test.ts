@@ -28,3 +28,12 @@ test("SQL registers subject, class and head transactional RPCs",()=>{
   assert.match(sql,/Some subject teachers have not submitted marks/);
   assert.match(sql,/The class compilation contains inconsistent result states/);
 });
+
+test("Migration 0009 uses paired named PostgreSQL function delimiters",()=>{
+  const sql=readFileSync("supabase/migrations/0009_subject_class_compilation.sql","utf8");
+  for(const tag of ["markbook","compile","decide"]){
+    const token="$"+tag+"$";
+    assert.equal(sql.split(token).length-1,2,"Expected paired delimiter "+token);
+  }
+  assert.match(sql,/grading scale does not cover some entered totals/i);
+});

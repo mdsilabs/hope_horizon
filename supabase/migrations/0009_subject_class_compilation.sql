@@ -194,6 +194,12 @@ begin
   if v_session is null then raise exception 'The period is not current' using errcode='22023'; end if;
   perform 1 from public.classes c where c.id=p_class_id and c.school_id=v_school and c.is_active for update;
   if not found then raise exception 'Class is inactive' using errcode='22023'; end if;
+  if jsonb_typeof(v_scale) is distinct from 'array' then
+    raise exception 'Configure the school grading scale before compiling results' using errcode='22023';
+  end if;
+  if jsonb_array_length(v_scale)=0 then
+    raise exception 'Configure at least one grading band before compilation' using errcode='22023';
+  end if;
   select count(*) into v_students from public.students st where st.class_id=p_class_id and st.is_active;
   select count(*) into v_subjects from public.class_subjects cs join public.subjects sub
     on sub.id=cs.subject_id and sub.is_active where cs.class_id=p_class_id;
@@ -207,6 +213,14 @@ begin
          and m.class_id=p_class_id and m.status='SUBMITTED'
       where st.class_id=p_class_id and st.is_active and cs.class_id=p_class_id and m.id is null)
   then raise exception 'Some subject teachers have not submitted marks for all students' using errcode='22023'; end if;
+
+  -- Never produce a published report card with an ungraded subject mark.
+  if exists(select 1 from public.subject_markbooks m
+    where m.class_id=p_class_id and m.term_id=p_term_id and m.status='SUBMITTED'
+      and not exists(select 1 from jsonb_array_elements(v_scale) band
+        where m.ca+m.exam between (band->>'minScore')::numeric
+                            and (band->>'maxScore')::numeric))
+  then raise exception 'The grading scale does not cover some entered totals' using errcode='22023'; end if;
 
   select b.status into v_existing from public.class_result_batches b
     where b.class_id=p_class_id and b.term_id=p_term_id for update;
