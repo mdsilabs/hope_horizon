@@ -13,7 +13,13 @@ import { Alert } from "@/components/ui/Alert";
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const redirectTo = searchParams.get("redirectTo") || undefined;
+  const requestedRedirect = searchParams.get("redirectTo");
+  // next/navigation warns against pushing untrusted/javascript: URLs.
+  const redirectTo = requestedRedirect &&
+    requestedRedirect.startsWith("/") &&
+    !requestedRedirect.startsWith("//") &&
+    !requestedRedirect.includes("\\")
+    ? requestedRedirect : undefined;
   const [serverError, setServerError] = useState<string | null>(null);
 
   const {

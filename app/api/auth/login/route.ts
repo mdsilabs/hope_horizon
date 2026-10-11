@@ -3,7 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { loginSchema } from "@/lib/validations/auth";
 import { ROLE_HOME_ROUTE } from "@/lib/auth/rbac";
 import { handleApiError, AuthenticationError } from "@/lib/utils/errors";
-import { recordAuditEntry } from "@/services/auditService";
+
 
 export async function POST(request: NextRequest) {
   try {
@@ -32,14 +32,18 @@ export async function POST(request: NextRequest) {
 
     await supabase.from("users").update({ last_login_at: new Date().toISOString() }).eq("id", profile.id);
 
-    await recordAuditEntry({
-      schoolId: profile.school_id,
-      userId: profile.id,
+    // Do not require a high-privilege service key merely to sign in.
+    // This audit write uses the newly authenticated user's RLS-scoped session.
+    const { error: auditError } = await supabase.from("audit_logs").insert({
+      school_id: profile.school_id,
+      user_id: profile.id,
       action: "LOGIN",
-      entityType: "User",
-      entityId: profile.id,
-      request,
+      entity_type: "User",
+      entity_id: profile.id,
+      ip_address: request.headers.get("x-forwarded-for"),
+      user_agent: request.headers.get("user-agent"),
     });
+    if (auditError) console.error("Login audit logging failed:", auditError);
 
     // The Supabase server client's cookie adapter already wrote the
     // session cookies onto this request's cookie jar during
