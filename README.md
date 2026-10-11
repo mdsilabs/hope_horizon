@@ -1,5 +1,17 @@
 # Hope Horizon Academy — Student Results Management Portal
 
+## First administrator login (2026-10)
+
+**Do not run the demo seed on a real school database.** After applying SQL
+migrations 0001–0005, the database still needs its very first school and
+ADMIN Auth account. On Windows, install dependencies with `npm install`,
+then double-click `scripts/bootstrap-admin.cmd`. The masked setup wizard
+accepts an administrator name, email, strong password and a newly rotated
+Supabase server secret key. It provisions at most one initial administrator
+and never commits or stores credentials. Afterwards sign in at `/login`.
+
+See [First administrator setup](docs/FIRST_ADMIN_LOGIN.md) for details.
+
 ## Teacher and academic setup (2026-10)
 
 Administrator features now include `/admin/teachers`, `/admin/academic`, and
