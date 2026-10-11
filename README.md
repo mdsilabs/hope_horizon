@@ -1,5 +1,19 @@
 # Hope Horizon Academy — Student Results Management Portal
 
+## User profiles and Cloudinary images
+
+After applying `supabase/migrations/0007_profile_cloudinary.sql` (after 0006),
+users can update their own name/contact details at `/profile`.
+Administrators can review and edit school account contact details at
+`/admin/users` and manage Cloudinary at `/admin/media`.
+School-specific cloud names, upload folder and enabled status are persisted
+in Supabase. Cloudinary API credentials remain server-only in Vercel environment
+variables, not in GitHub or the database.
+
+See [Profile / Cloudinary setup](docs/PROFILE_CLOUDINARY_SETUP.md).
+
+
+
 ## Student and family logins (2026-10)
 
 Administrators can now activate logins for enrolled students from `/admin/students`,

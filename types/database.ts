@@ -98,6 +98,12 @@ export interface Database {
           { foreignKeyName: "schools_current_term_fk"; columns: ["current_term_id"]; referencedRelation: "terms"; referencedColumns: ["id"] },
         ];
       };
+      school_media_settings: {
+        Row: { school_id: string; cloud_name: string; folder: string; enabled: boolean; updated_at: string };
+        Insert: { school_id: string; cloud_name: string; folder?: string; enabled?: boolean };
+        Update: Partial<{ cloud_name: string; folder: string; enabled: boolean }>;
+        Relationships: [{foreignKeyName:"school_media_settings_school_id_fkey";columns:["school_id"];referencedRelation:"schools";referencedColumns:["id"]}];
+      };
       users: {
         Row: {
           id: string;
@@ -106,6 +112,8 @@ export interface Database {
           email: string;
           phone: string | null;
           whatsapp_number: string | null;
+          avatar_url: string | null;
+          avatar_uploaded_at: string | null;
           role: UserRole;
           is_active: boolean;
           last_login_at: string | null;

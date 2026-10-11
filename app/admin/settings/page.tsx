@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, RefreshCw, Save, ShieldCheck } from "lucide-react";
+import { ArrowLeft, RefreshCw, Save, ShieldCheck, Cloud } from "lucide-react";
 import { Card } from "@/components/ui/Card";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -124,6 +124,17 @@ export default function SchoolSettingsPage() {
 
     {error && <p role="alert" className="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">{error}</p>}
     {notice && <p role="status" className="rounded-xl border border-green-200 bg-green-50 p-3 text-sm text-green-800">{notice}</p>}
+    <Card className="flex flex-wrap items-center justify-between gap-3">
+      <div className="flex items-center gap-3">
+        <Cloud className="h-6 w-6 text-brand-700"/>
+        <div><h2 className="font-semibold text-slate-900">Cloudinary photo storage</h2>
+          <p className="text-sm text-slate-500">Configure school photo uploads and verify server credentials.</p>
+        </div>
+      </div>
+      <Link href="/admin/media" className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-medium text-white hover:bg-brand-600">
+        Configure Cloudinary
+      </Link>
+    </Card>
     {loading ? <Card><p className="text-sm text-slate-500">Loading your school settings...</p></Card> :
       <form onSubmit={save} className="space-y-5">
         <Card className="space-y-4">

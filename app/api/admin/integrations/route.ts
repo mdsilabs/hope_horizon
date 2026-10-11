@@ -65,6 +65,15 @@ export async function GET() {
         add("Supabase Auth administration","fail","Unable to reach Auth admin API.");
       }
     }
+    const {data:mediaSettings,error:mediaError}=await db.from("school_media_settings")
+      .select("cloud_name,folder,enabled").eq("school_id",session.profile.school_id).maybeSingle();
+    const cloudinarySecrets=Boolean(process.env.CLOUDINARY_API_KEY&&process.env.CLOUDINARY_API_SECRET);
+    add("Cloudinary database settings",mediaError?"fail":mediaSettings?.enabled?"pass":"warn",
+      mediaError?"Apply profile / Cloudinary migration 0007.":
+        mediaSettings?.enabled?"Cloudinary is enabled for the school.":"Configure and enable Cloudinary from /admin/media.");
+    add("Cloudinary server credentials",cloudinarySecrets?"pass":"warn",
+      cloudinarySecrets?"Cloudinary API key and secret are present on the server.":"Set CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET in Vercel's private environment.");
+
     const appUrl=process.env.NEXT_PUBLIC_APP_URL;
     let validUrl=false;
     try{if(appUrl){const u=new URL(appUrl);validUrl=u.protocol==="https:"||(u.protocol==="http:"&&u.hostname==="localhost");}}catch{}
