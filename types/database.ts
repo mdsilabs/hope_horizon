@@ -98,6 +98,19 @@ export interface Database {
           { foreignKeyName: "schools_current_term_fk"; columns: ["current_term_id"]; referencedRelation: "terms"; referencedColumns: ["id"] },
         ];
       };
+      class_subject_corrections: {
+        Row:{id:string;school_id:string;class_id:string;subject_id:string;term_id:string;
+          reason:string;requested_by:string;requested_at:string;resolved_by:string|null;resolved_at:string|null};
+        Insert:Database["public"]["Tables"]["class_subject_corrections"]["Row"];
+        Update:Partial<Database["public"]["Tables"]["class_subject_corrections"]["Row"]>;
+        Relationships:[];
+      };
+      class_result_review_signoffs: {
+        Row:{class_id:string;term_id:string;school_id:string;reviewed_by:string;reviewed_at:string;checked_rows:number};
+        Insert:Database["public"]["Tables"]["class_result_review_signoffs"]["Row"];
+        Update:Partial<Database["public"]["Tables"]["class_result_review_signoffs"]["Row"]>;
+        Relationships:[];
+      };
       subject_markbooks: {
         Row: {
           id:string;school_id:string;class_id:string;subject_id:string;student_id:string;
@@ -508,6 +521,11 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_request_subject_correction: {
+        Args:{p_class_id:string;p_subject_id:string;p_term_id:string;p_reason:string};Returns:string;
+      };
+      hh_clear_subject_correction:{Args:{p_request_id:string};Returns:boolean};
+      hh_signoff_class_review:{Args:{p_class_id:string;p_term_id:string};Returns:number};
       hh_save_subject_markbook: {
         Args:{p_class_id:string;p_subject_id:string;p_term_id:string;
           p_scores:{studentId:string;ca:number;exam:number}[];p_submit:boolean};

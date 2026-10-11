@@ -1,5 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import type { NotificationChannel, NotificationType } from "@/types/database";
+import {sendGmailMessage} from "@/lib/email/gmail-smtp";
 
 interface SendNotificationInput {
   schoolId: string;
@@ -13,9 +14,8 @@ interface SendNotificationInput {
 
 /**
  * Creates a Notification row and (for EMAIL/WHATSAPP) hands off to the
- * relevant provider. Providers are intentionally left as pluggable stubs —
- * wire up your chosen EMAIL/WHATSAPP provider using the env vars reserved
- * in .env.example. IN_APP notifications require no external provider.
+ * relevant provider. EMAIL uses the configured Gmail SMTP transport (server only);
+ * WHATSAPP remains a separate, unsupported provider until implemented. IN_APP notifications require no external provider.
  *
  * Uses the admin client because a teacher/approver triggering a
  * notification to a *different* user (e.g. notifying a student their
@@ -79,9 +79,12 @@ export async function sendNotification(input: SendNotificationInput) {
 }
 
 async function dispatchEmail(input: SendNotificationInput): Promise<void> {
-  // TODO: integrate the school's chosen EMAIL provider (SMTP/Resend/SendGrid)
-  // using EMAIL_PROVIDER / SMTP_* env vars from .env.example.
-  void input;
+  const db=createAdminClient();
+  const {data:recipient,error}=await db.from("users")
+    .select("email,is_active,school_id").eq("id",input.recipientId)
+    .eq("school_id",input.schoolId).maybeSingle();
+  if(error||!recipient||!recipient.is_active)throw new Error("Notification recipient is inactive or missing.");
+  await sendGmailMessage(recipient.email,input.title,input.message);
 }
 
 async function dispatchWhatsapp(input: SendNotificationInput): Promise<void> {

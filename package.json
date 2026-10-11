@@ -28,7 +28,8 @@
     "exceljs": "^4.4.0",
     "qrcode": "^1.5.4",
     "nanoid": "^5.0.7",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "nodemailer": "^10.0.13"
   },
   "devDependencies": {
     "typescript": "^5.5.0",

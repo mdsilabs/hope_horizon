@@ -22,7 +22,7 @@ export async function GET(){
     const termId=school?.current_term_id??null;
     const classes=await Promise.all((classLinks??[]).filter(c=>c.classes?.is_active).map(async c=>{
       const classId=c.class_id;
-      const [students,subjects,marks,batch]=await Promise.all([
+      const [students,subjects,marks,batch,signoff]=await Promise.all([
         db.from("students").select("id",{count:"exact",head:true})
           .eq("school_id",schoolId).eq("class_id",classId).eq("is_active",true),
         db.from("class_subjects").select("subject_id,subjects!inner(is_active)",{count:"exact",head:true})
@@ -32,13 +32,16 @@ export async function GET(){
           .eq("term_id",termId).eq("status","SUBMITTED"):null,
         termId?db.from("class_result_batches").select("id,status,decision_remarks")
           .eq("class_id",classId).eq("term_id",termId).maybeSingle():null,
+        termId?db.from("class_result_review_signoffs").select("reviewed_at,reviewed_by")
+          .eq("class_id",classId).eq("term_id",termId).maybeSingle():null,
       ]);
-      if(students.error||subjects.error||marks?.error||batch?.error)
+      if(students.error||subjects.error||marks?.error||batch?.error||signoff?.error)
         throw new AppError("Could not calculate class readiness. Apply migration 0009.",503);
       const studentCount=students.count??0, subjectCount=subjects.count??0;
       return {classId,className:c.classes!.name+(c.classes!.arm?" "+c.classes!.arm:""),
         studentCount,subjectCount,expected:studentCount*subjectCount,
-        submitted:marks?.count??0,batch:batch?.data??null};
+        submitted:marks?.count??0,batch:batch?.data??null,
+        verified:!!signoff?.data,reviewedAt:signoff?.data?.reviewed_at??null};
     }));
     return NextResponse.json({termId,classes});
   }catch(e){return handleApiError(e);}
