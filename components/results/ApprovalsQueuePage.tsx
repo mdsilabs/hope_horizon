@@ -14,29 +14,40 @@ export default async function ApprovalsQueuePage({ basePath }: { basePath: strin
   const supabase = await createClient();
   const { data: results } = await supabase
     .from("results")
-    .select("id, overall_total, submitted_at, students(full_name, admission_number), classes(name)")
+    .select("id, class_id, term_id, overall_total, submitted_at, students(full_name, admission_number), classes(name)")
     .eq("school_id", session.profile.school_id)
     .eq("status", "PENDING_APPROVAL")
     .order("submitted_at", { ascending: true });
 
+  const {data:compiledBatches} = await supabase.from("class_result_batches")
+    .select("class_id,term_id").eq("school_id",session.profile.school_id)
+    .eq("status","PENDING_APPROVAL");
+  const compiledKeys=new Set((compiledBatches??[]).map(b=>b.class_id+":"+b.term_id));
   type Row = {
+    class_id: string; term_id: string;
     id: string;
     overall_total: number | null;
     submitted_at: string | null;
     students: { full_name: string; admission_number: string } | null;
     classes: { name: string } | null;
   };
-  const rows = (results ?? []) as unknown as Row[];
+  const rows = ((results ?? []) as unknown as Row[]).filter(r=>!compiledKeys.has(r.class_id+":"+r.term_id));
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="font-display text-2xl font-semibold text-slate-900">Approvals queue</h1>
         <p className="mt-1 text-sm text-slate-500">
-          Results submitted by teachers, waiting for your review.
+          Legacy per-student results only. Compiled class results are reviewed together in Class Approvals.
         </p>
       </div>
 
+      <div className="flex flex-wrap gap-3">
+        <Link href={basePath+"/class-approvals"}
+          className="rounded-xl bg-brand-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-600">
+          Review compiled classes
+        </Link>
+      </div>
       <Card>
         <CardHeader title={`${rows.length} awaiting approval`} />
         {rows.length === 0 ? (
