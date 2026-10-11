@@ -474,6 +474,17 @@ export interface Database {
       };
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      hh_admin_replace_teacher_assignments: {
+        Args: { p_teacher_id: string; p_class_ids: string[]; p_subject_assignments: { classId: string; subjectId: string }[] };
+        Returns: boolean;
+      };
+      hh_admin_activate_term: { Args: { p_term_id: string }; Returns: boolean };
+      hh_portal_capabilities: { Args: Record<string, never>; Returns: {
+        teacher_assignment_rpc: boolean; academic_activation_rpc: boolean;
+        auth_trigger: boolean; authorization_guard: boolean;
+        rls_teachers: boolean; rls_terms: boolean;
+      } };
+    };
   };
 }
