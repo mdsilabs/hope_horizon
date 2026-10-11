@@ -7,7 +7,7 @@ import { AppError, NotFoundError, handleApiError } from "@/lib/utils/errors";
 const fields = [
   "id", "name", "contact_email", "contact_phone", "address", "website", "levels",
   "academic_structure_type", "academic_period_label", "periods_per_session",
-  "ca_max_score", "exam_max_score", "require_approval_before_publish", "enable_qr_verification",
+  "ca_max_score", "exam_max_score",
 ].join(",");
 
 export async function GET() {
@@ -72,8 +72,6 @@ export async function PATCH(request: NextRequest) {
       periods_per_session: input.periodsPerSession,
       ca_max_score: input.caMaxScore,
       exam_max_score: input.examMaxScore,
-      require_approval_before_publish: input.requireApprovalBeforePublish,
-      enable_qr_verification: input.enableQrVerification,
     };
     const { data, error } = await db.from("schools").update(changes).eq("id",schoolId)
       .select(fields).single();

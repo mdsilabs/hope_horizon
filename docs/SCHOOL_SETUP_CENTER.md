@@ -17,7 +17,7 @@ claim of production safety: email, provider integrations and RLS should still be
 
 `/admin/settings` lets administrators edit school identity, levels, contact
 information, web address, academic structure, CA/exam score limits and simple
-result policies. The `/api/admin/school` GET/PATCH route validates values on the
+basic grading limits. The `/api/admin/school` GET/PATCH route validates values on the
 server, checks ADMIN role and updates **only the session school ID** using
 the signed-in user's RLS-scoped Supabase client. Inputs cannot choose another
 school ID. Audits log changed field names, not PII values.

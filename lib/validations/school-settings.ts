@@ -27,8 +27,6 @@ export const schoolSettingsSchema = z.object({
   periodsPerSession: z.number().int().min(1).max(6),
   caMaxScore: z.number().int().min(0).max(100),
   examMaxScore: z.number().int().min(0).max(100),
-  requireApprovalBeforePublish: z.boolean(),
-  enableQrVerification: z.boolean(),
 }).strict().refine(value => value.caMaxScore + value.examMaxScore === 100, {
   path: ["examMaxScore"], message: "CA and exam maximums must add up to 100.",
 });

@@ -18,7 +18,6 @@ type DbSchool = {
   academic_structure_type: SchoolSettingsInput["academicStructureType"];
   academic_period_label: string; periods_per_session: number;
   ca_max_score: number; exam_max_score: number;
-  require_approval_before_publish: boolean; enable_qr_verification: boolean;
 };
 
 function formFromSchool(school: DbSchool): SchoolSettingsInput {
@@ -34,8 +33,6 @@ function formFromSchool(school: DbSchool): SchoolSettingsInput {
     periodsPerSession: school.periods_per_session,
     caMaxScore: school.ca_max_score,
     examMaxScore: school.exam_max_score,
-    requireApprovalBeforePublish: school.require_approval_before_publish,
-    enableQrVerification: school.enable_qr_verification,
   };
 }
 
@@ -43,7 +40,6 @@ const defaultForm: SchoolSettingsInput = {
   name: "", contactEmail: "", contactPhone: "", address: "", website: "",
   levels: ["SECONDARY"], academicStructureType: "TERM", academicPeriodLabel: "Term",
   periodsPerSession: 3, caMaxScore: 40, examMaxScore: 60,
-  requireApprovalBeforePublish: true, enableQrVerification: true,
 };
 
 function getError(body: unknown): string {
@@ -193,17 +189,7 @@ export default function SchoolSettingsPage() {
           </div>
           <p className="text-sm text-slate-500">Combined maximum: <strong className={form.caMaxScore+form.examMaxScore===100?"text-slate-900":"text-red-700"}>
             {form.caMaxScore + form.examMaxScore}/100</strong></p>
-          <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-            <input type="checkbox" className="h-4 w-4 accent-blue-600" checked={form.requireApprovalBeforePublish}
-              onChange={e=>field("requireApprovalBeforePublish",e.target.checked)}/>
-            Require approval before publishing results
-          </label>
-          <label className="flex items-center gap-3 text-sm font-medium text-slate-700">
-            <input type="checkbox" className="h-4 w-4 accent-blue-600" checked={form.enableQrVerification}
-              onChange={e=>field("enableQrVerification",e.target.checked)}/>
-            Enable QR result verification
-          </label>
-          <p className="text-xs text-slate-500">The approval workflow still enforces its current server-side publishing rules; these preferences do not bypass required approvals.</p>
+          <p className="text-xs text-slate-500">Result publishing continues to require an approved result, with QR verification generated on publication. Advanced workflow policies are not editable here yet.</p>
         </Card>
         <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <p className="flex items-center gap-2 text-sm text-slate-600">

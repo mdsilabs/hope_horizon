@@ -7,7 +7,7 @@ const valid = {
   name: "Hope Horizon Academy", contactEmail: "office@hope.example", contactPhone: "+234 803 000 0000",
   address: "Makurdi", website: "https://example.org", levels: ["SECONDARY"] as ["SECONDARY"],
   academicStructureType: "TERM" as const, academicPeriodLabel: "Term", periodsPerSession: 3,
-  caMaxScore: 40, examMaxScore: 60, requireApprovalBeforePublish: true, enableQrVerification: true,
+  caMaxScore: 40, examMaxScore: 60,
 };
 test("school settings accept valid school identity and grading maxima", () => {
   assert.equal(schoolSettingsSchema.safeParse(valid).success, true);
