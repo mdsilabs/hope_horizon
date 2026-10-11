@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
     if (classId) uuidString.parse(classId);
     const pageSize = 25;
     let dbQuery = supabase.from("students")
-      .select("id, full_name, admission_number, registration_number, student_id, class_id, gender, date_of_birth, passport_url, is_active", { count: "exact" })
+      .select("id, full_name, admission_number, registration_number, student_id, class_id, gender, date_of_birth, passport_url, is_active, user_id, users(email)", { count: "exact" })
       .eq("school_id", session.profile.school_id);
     if (classId) dbQuery = dbQuery.eq("class_id", classId);
     if (query) dbQuery = dbQuery.ilike("full_name", "%" + query.replace(/[%_\\]/g, "\\$&") + "%");

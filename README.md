@@ -1,5 +1,22 @@
 # Hope Horizon Academy — Student Results Management Portal
 
+## Student and family logins (2026-10)
+
+Administrators can now activate logins for enrolled students from `/admin/students`,
+and create parent accounts / manage linked children at `/admin/parents`.
+Accounts are provisioned using Supabase Auth's privileged server-only API
+with trusted `app_metadata`; no reusable or temporary passwords are ever
+displayed. Setup emails use Supabase Auth password recovery with a
+configured `NEXT_PUBLIC_APP_URL` and Supabase Auth SMTP.
+
+**Important:** Apply `supabase/migrations/0006_family_account_integrity.sql`
+after 0001–0005 on the existing database before inviting any families.
+It adds guards against cross-school parent-child links, enforces student
+account ownership, and provides atomic parent-child relationship updates.
+See [Family account setup](docs/FAMILY_ACCOUNT_SETUP.md).
+
+
+
 ## School onboarding and settings (2026-10)
 
 The first administrator now lands on a dashboard with a database-backed school
