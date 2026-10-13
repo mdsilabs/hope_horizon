@@ -33,3 +33,16 @@ are deleted and the public API signatures do not change.
 
 Repository checks validate SQL shape but do **not** execute Postgres migrations.
 No live tenant claims are made until staging SQL verification passes.
+
+## Additional privacy / audit controls
+- **Profile isolation:** Students and parents can no longer list classmates'
+  or school staff members' contact information via the broad historical
+  `public.users` RLS policy. Their own profile remains available. Staff
+  school-scoped reads remain intact.
+- **Audit integrity:** Every direct authenticated insert to `audit_logs`
+  must carry the current user's real ID and school. Regular student/parent
+  users may only add login/logout audit events; staff approval/audit actions
+  require school leadership permissions. Service-role and server-side
+  privileged function audit writes continue to be possible.
+- Test parent/student self profile and staff admin directory access after
+  installing migration 0013.

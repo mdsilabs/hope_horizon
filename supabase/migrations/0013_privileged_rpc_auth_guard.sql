@@ -21,6 +21,33 @@ end;
 $active$;
 revoke all on function public.hh_assert_active_setup() from public,anon,authenticated;
 
+-- Protect personally identifying contact information: previously any
+-- student or parent in the school could enumerate all users' email/phone.
+-- Own-profile reads remain available through migration 0012's policy.
+drop policy if exists "users can read profiles in their own school" on public.users;
+create policy "school staff can read profiles in their own school"
+on public.users for select to authenticated
+using (
+  school_id = (select public.current_user_school_id())
+  and (select public.current_user_role()) in
+    ('ADMIN','PRINCIPAL','VICE_PRINCIPAL','TEACHER','ACCOUNTANT')
+);
+
+-- Audit events must never claim to have been performed by a different user.
+-- Staff workflow actions can still record genuine events as themselves;
+-- regular users can write only their own login/logout records.
+drop policy if exists "any authenticated school member can write an audit entry" on public.audit_logs;
+create policy "authenticated users write only legitimate own audit events"
+on public.audit_logs for insert to authenticated
+with check (
+  user_id = (select auth.uid())
+  and school_id = (select public.current_user_school_id())
+  and (
+    action in ('LOGIN','LOGOUT','LOGIN_FAILED')
+    or (select public.current_user_role()) in ('ADMIN','PRINCIPAL','VICE_PRINCIPAL')
+  )
+);
+
 -- Each existing privileged RPC is renamed and made non-callable by users.
 -- A same-signature guarded wrapper preserves every existing API and argument.
 

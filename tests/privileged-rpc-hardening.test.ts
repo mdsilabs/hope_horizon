@@ -33,3 +33,14 @@ test("dollar-quoted wrapper SQL is syntactically paired",()=>{
  assert.equal((s.match(/\$active\$/g)||[]).length,2);
  assert.match(s,/^begin;/m);assert.match(s,/^commit;/m);
 });
+
+test("school contact details are not exposed to arbitrary student/parent accounts",()=>{
+ assert.match(s,/drop policy if exists "users can read profiles in their own school"/);
+ assert.match(s,/create policy "school staff can read profiles in their own school"/);
+ assert.match(s,/\('ADMIN','PRINCIPAL','VICE_PRINCIPAL','TEACHER','ACCOUNTANT'\)/);
+});
+test("audit entries cannot impersonate other actors or cross school boundaries",()=>{
+ assert.match(s,/drop policy if exists "any authenticated school member can write an audit entry"/);
+ assert.match(s,/user_id = \(select auth\.uid\(\)\)/);
+ assert.match(s,/school_id = \(select public\.current_user_school_id\(\)\)/);
+});
