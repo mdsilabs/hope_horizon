@@ -194,4 +194,8 @@ $guard$;
 revoke all on function public.hh_release_class_batch(uuid,text) from public,anon;
 grant execute on function public.hh_release_class_batch(uuid,text) to authenticated;
 
+-- Refresh PostgREST's RPC catalogue after renaming and re-registering all
+-- privileged function signatures. The notification is sent on COMMIT.
+notify pgrst, 'reload schema';
+
 commit;
