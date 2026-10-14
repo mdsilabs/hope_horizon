@@ -44,15 +44,16 @@ async function main() {
   const { data: existingUsers, error: existingError } = await db.from("users").select("id").eq("school_id",schoolId).limit(1);
   if (existingError || existingUsers?.length) throw new Error("QA test users already exist. Refusing to create duplicates.");
 
-  async function account(role: "PRINCIPAL" | "TEACHER" | "STUDENT" | "PARENT",name: string,email: string) {
+  async function account(role: "ADMIN" | "PRINCIPAL" | "TEACHER" | "STUDENT" | "PARENT",name: string,email: string) {
     const { data,error } = await db.auth.admin.createUser({
       email,password,email_confirm:true,user_metadata:{name},
-      app_metadata:{school_id:schoolId,role,must_change_password:false},
+      app_metadata:{school_id:schoolId,role,must_change_password:false,...(role==="ADMIN"?{admin_tier:"PRIMARY"}:{})},
     });
     if (error || !data.user) throw new Error(`Account creation failed for ${email}: ${error?.message}`);
     return data.user.id;
   }
   const domain = "example.test";
+  await account("ADMIN","QA Administrator",`qa.admin@${domain}`);
   const principalId = await account("PRINCIPAL","QA Principal",`qa.principal@${domain}`);
   const classTeacherId = await account("TEACHER","QA Class Teacher",`qa.class.teacher@${domain}`);
   const {data:ct,error:ctError}=await db.from("teachers").insert({
@@ -93,8 +94,8 @@ async function main() {
     if(linkError)throw linkError;
   }
   void principalId;
-  console.log("QA staging fixture ready: 1 principal, 5 subject teachers, 1 class teacher, 10 students and 10 linked parents.");
-  console.log("Login email format: qa.principal@example.test, qa.class.teacher@example.test, qa.teacher.<code>@example.test, qa.student.01@example.test ... qa.parent.10@example.test");
+  console.log("QA staging fixture ready: 1 administrator, 1 principal, 5 subject teachers, 1 class teacher, 10 students and 10 linked parents.");
+  console.log("Login email format: qa.admin@example.test, qa.principal@example.test, qa.class.teacher@example.test, qa.teacher.<code>@example.test, qa.student.01@example.test ... qa.parent.10@example.test");
   console.log("Password read from STAGING_TEST_PASSWORD (not displayed). Enter scores via the app to exercise the actual result workflow.");
 }
 main().catch(e=>{ console.error(e instanceof Error ? e.message : "Staging seeding failed");process.exitCode=1; });
