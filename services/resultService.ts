@@ -128,6 +128,9 @@ export async function saveDraftResult(session: CurrentSession, input: ResultInpu
     subjectId: s.subjectId,
     ...computeSubjectScore(s.ca, s.exam, school.grading_scale),
   }));
+  if (computedSubjects.some((score) => !score.grade)) {
+    throw new ValidationError("The school grading scale does not cover one or more scores. Correct the grading settings before saving.");
+  }
   const { overallTotal, overallAverage } = computeOverall(computedSubjects);
 
   const { data: existing } = await supabase
@@ -213,8 +216,9 @@ export async function saveDraftResult(session: CurrentSession, input: ResultInpu
 }
 
 export async function submitResult(session: CurrentSession, resultId: string): Promise<ResultRow> {
-  if(session.profile.role==="TEACHER")throw new AuthorizationError(
-    "Submit subject marks in Markbook, then compile the class for school-head approval.");
+  if (!["ADMIN", "PRINCIPAL", "VICE_PRINCIPAL"].includes(session.profile.role)) {
+    throw new AuthorizationError("Only authorized school leadership may submit legacy draft results.");
+  }
   const supabase = createAdminClient();
   const { data: result } = await supabase.from("results").select("*").eq("id", resultId).single();
 
@@ -223,6 +227,17 @@ export async function submitResult(session: CurrentSession, resultId: string): P
   }
   if (result.status !== "DRAFT") {
     throw new ConflictError("Only draft results can be submitted for approval.");
+  }
+  const { data: compiledBatch, error: compiledBatchError } = await supabase
+    .from("class_result_batches")
+    .select("id")
+    .eq("school_id", session.profile.school_id)
+    .eq("class_id", result.class_id)
+    .eq("term_id", result.term_id)
+    .maybeSingle();
+  if (compiledBatchError) throw compiledBatchError;
+  if (compiledBatch) {
+    throw new ConflictError("Compiled class results must be submitted through Class Compilation.");
   }
 
   const { count } = await supabase
@@ -242,9 +257,12 @@ export async function submitResult(session: CurrentSession, resultId: string): P
       rejection_reason: null,
     })
     .eq("id", resultId)
+    .eq("school_id", session.profile.school_id)
+    .eq("status", "DRAFT")
     .select()
-    .single();
-  if (error || !updated) throw new Error(error?.message || "Failed to submit result.");
+    .maybeSingle();
+  if (error) throw new Error(error.message || "Failed to submit result.");
+  if (!updated) throw new ConflictError("Result was already submitted or changed. Refresh and try again.");
 
   await recordAuditEntry({
     schoolId: session.profile.school_id,
