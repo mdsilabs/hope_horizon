@@ -9,7 +9,6 @@
  */
 import "dotenv/config";
 import { createClient } from "@supabase/supabase-js";
-import { getPublicSupabaseConfig } from "../lib/supabase/config";
 
 const requireEnv = (name: string) => {
   const value = process.env[name];
@@ -18,7 +17,7 @@ const requireEnv = (name: string) => {
 };
 async function main() {
   if (process.env.ALLOW_STAGING_SEED !== "true") throw new Error("Set ALLOW_STAGING_SEED=true for dedicated staging only.");
-  const url = getPublicSupabaseConfig().url;
+  const url = requireEnv("STAGING_SUPABASE_URL");
   const ref = new URL(url).hostname.split(".")[0];
   if (ref !== requireEnv("EXPECTED_STAGING_PROJECT_REF")) throw new Error("Staging Supabase project mismatch.");
   // Known Hope Horizon production reference must never be used for this fixture.
