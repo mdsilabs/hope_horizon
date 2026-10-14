@@ -128,6 +128,9 @@ export async function saveDraftResult(session: CurrentSession, input: ResultInpu
     subjectId: s.subjectId,
     ...computeSubjectScore(s.ca, s.exam, school.grading_scale),
   }));
+  if (computedSubjects.some((score) => !score.grade)) {
+    throw new ValidationError("The school grading scale does not cover one or more scores. Correct the grading settings before saving.");
+  }
   const { overallTotal, overallAverage } = computeOverall(computedSubjects);
 
   const { data: existing } = await supabase
