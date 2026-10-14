@@ -11,7 +11,7 @@ const value = (name:string) => {
 };
 const url=value("STAGING_SUPABASE_URL");
 const ref=new URL(url).hostname.split(".")[0];
-if(process.env.ALLOW_STAGING_SEED!=="true" || ref!==value("EXPECTED_STAGING_PROJECT_REF") ||
+if(process.env.ALLOW_STAGING_SEED!=="true" || new URL(url).origin!==`https://${ref}.supabase.co` || ref!==value("EXPECTED_STAGING_PROJECT_REF") ||
    ref==="iwfpdwihinhcwjgvmfei") throw Error("Dedicated isolated staging project required.");
 const password=value("STAGING_TEST_PASSWORD");
 const publicKey=value("STAGING_SUPABASE_PUBLISHABLE_KEY");
