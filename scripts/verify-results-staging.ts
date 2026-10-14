@@ -34,6 +34,7 @@ async function run(){
  assert.ifError(schoolError);
  assert.equal(schools?.length,1);
  const schoolId=schools![0].id,termId=schools![0].current_term_id;
+ if (!termId) throw Error("The QA school must have a configured current term before testing.");
  const {data:classes}=await adminDb.from("classes").select("id").eq("school_id",schoolId);
  assert.equal(classes?.length,1);const classId=classes![0].id;
  const {data:students}=await adminDb.from("students").select("id").eq("school_id",schoolId).order("admission_number");
