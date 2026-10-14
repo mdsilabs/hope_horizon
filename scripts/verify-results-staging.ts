@@ -6,6 +6,7 @@
 import "dotenv/config";
 import assert from "node:assert/strict";
 import { createClient } from "@supabase/supabase-js";
+import type { Database } from "../types/database";
 const value = (name:string) => {
  const v=process.env[name];if(!v)throw Error(`Missing ${name}`);return v;
 };
@@ -17,9 +18,12 @@ const password=value("STAGING_TEST_PASSWORD");
 const publicKey=value("STAGING_SUPABASE_PUBLISHABLE_KEY");
 const secret=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
 if(!secret)throw Error("Missing staging service credential for read-only fixture discovery.");
-const adminDb=createClient(url,secret,{auth:{autoRefreshToken:false,persistSession:false}});
+const adminDb=createClient<Database>(url,secret,{auth:{autoRefreshToken:false,persistSession:false}});
+function makeStagingClient() {
+ return createClient<Database>(url,publicKey,{auth:{autoRefreshToken:false,persistSession:false}});
+}
 async function login(email:string){
- const db=createClient(url,publicKey,{auth:{autoRefreshToken:false,persistSession:false}});
+ const db=makeStagingClient();
  const {error}=await db.auth.signInWithPassword({email,password});
  if(error)throw Error(`Login failed (${email}): ${error.message}`);
  return db;
@@ -45,7 +49,7 @@ async function run(){
    studentId,ca:25+((i+subjectIndex)%12)+(correction&&i===0?1:0),
    exam:40+((i+subjectIndex)%15)
  }));
- const subjectClients=new Map<string,ReturnType<typeof createClient>>();
+ const subjectClients=new Map<string,ReturnType<typeof makeStagingClient>>();
  // All five subject teachers use their own Auth sessions.
  for(const [index,sub] of subjects!.entries()){
    const db=await login(`qa.teacher.${sub.code.toLowerCase()}@example.test`);
