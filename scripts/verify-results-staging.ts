@@ -55,12 +55,13 @@ async function run(){
  for(const [index,sub] of subjects!.entries()){
    const db=await login(`qa.teacher.${sub.code.toLowerCase()}@example.test`);
    subjectClients.set(sub.id,db);
-   const {data,error}=await db.rpc("hh_save_subject_markbook",{
-     p_class_id:classId,p_subject_id:sub.id,p_term_id:termId,
-     p_scores:scores(index),p_submit:true
-   });
-   if(error)throw Error(`Subject ${sub.code} save: ${error.message}`);
-   assert.equal(data,10);
+   const savedMarkbook: { data: number | null; error: { message: string } | null } =
+     await db.rpc("hh_save_subject_markbook", {
+       p_class_id:classId,p_subject_id:sub.id,p_term_id:termId,
+       p_scores:scores(index),p_submit:true
+     });
+   if(savedMarkbook.error)throw Error(`Subject ${sub.code} save: ${savedMarkbook.error.message}`);
+   assert.equal(savedMarkbook.data,10);
    console.log(`PASS subject entry: ${sub.code}`);
  }
  // Return one submitted subject to its teacher, then clear only after resubmission.
