@@ -88,10 +88,11 @@ async function dispatchEmail(input: SendNotificationInput): Promise<void> {
   await sendGmailMessage(recipient.email,input.title,input.message);
 }
 
-async function dispatchWhatsapp(input: SendNotificationInput): Promise<void> {
-  // TODO: integrate WhatsApp Cloud API / Twilio using WHATSAPP_* env vars
-  // from .env.example.
-  void input;
+async function dispatchWhatsapp(_input: SendNotificationInput): Promise<void> {
+  // Never acknowledge delivery when the transport is not configured.
+  // Keep WHATSAPP in the supported enum for existing school data, but fail closed
+  // until a provider implementation can confirm message acceptance.
+  throw new Error("WhatsApp notification provider is not configured.");
 }
 
 export async function getUnreadCount(recipientId: string): Promise<number> {
