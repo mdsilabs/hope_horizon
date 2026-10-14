@@ -14,6 +14,24 @@ export const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_QLi8sSbByVHa9luUvJFLeA_1
  * records to the wrong Supabase instance.
  */
 export function getPublicSupabaseConfig() {
+  // Explicit QA preview configuration. Production remains pinned by default.
+  // This must only be enabled in a dedicated staging deployment.
+  if (process.env.NEXT_PUBLIC_HOPE_HORIZON_STAGING === "true") {
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim();
+    const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY?.trim();
+    const ref = process.env.NEXT_PUBLIC_STAGING_PROJECT_REF?.trim();
+    if (!url || !key || !ref || ref === SUPABASE_PROJECT_REF) {
+      throw new Error("Staging requires an independent Supabase project, publishable key, and expected project reference.");
+    }
+    const parsed = new URL(url);
+    if (parsed.protocol !== "https:" ||
+      parsed.origin !== `https://${ref}.supabase.co` ||
+      parsed.pathname !== "/" || parsed.search || parsed.hash ||
+      !key.startsWith("sb_publishable_")) {
+      throw new Error("Invalid or mismatched staging Supabase project configuration.");
+    }
+    return { url: parsed.origin, key };
+  }
   const suppliedUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.trim() || SUPABASE_PROJECT_URL;
   let parsed: URL;
   try {
