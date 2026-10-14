@@ -20,7 +20,7 @@ export async function GET(request: NextRequest) {
     const { data: result } = await supabase
       .from("results")
       .select(
-        "overall_average, students(full_name), classes(name), academic_sessions(name), terms(name), schools(name)"
+        "students(full_name), classes(name), academic_sessions(name), terms(name), schools(name)"
       )
       .eq("qr_verification_code", code)
       .eq("status", "PUBLISHED")
@@ -31,7 +31,6 @@ export async function GET(request: NextRequest) {
     }
 
     const r = result as unknown as {
-      overall_average: number | null;
       students: { full_name: string } | null;
       classes: { name: string } | null;
       academic_sessions: { name: string } | null;
@@ -45,7 +44,6 @@ export async function GET(request: NextRequest) {
       className: r.classes?.name,
       sessionName: r.academic_sessions?.name,
       termName: r.terms?.name,
-      overallAverage: r.overall_average,
       schoolName: r.schools?.name,
     });
   } catch (error) {
