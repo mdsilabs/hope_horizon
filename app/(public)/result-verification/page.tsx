@@ -12,7 +12,6 @@ interface VerificationResult {
   className?: string;
   termName?: string;
   sessionName?: string;
-  overallAverage?: number;
   schoolName?: string;
 }
 
