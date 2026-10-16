@@ -2,6 +2,30 @@
 
 This is a **staging-only, destructive workflow rehearsal**. Run against a NEW, DEDICATED Supabase project with **no real school data**, not the pinned Hope Horizon production project `iwfpdwihinhcwjgvmfei`.
 
+## Single-SQL staging installation (recommended for a NEW QA project)
+
+If you want one SQL script instead of manually applying fourteen files, use
+[`supabase/staging/hope_horizon_all_migrations_and_staging.sql`](../supabase/staging/hope_horizon_all_migrations_and_staging.sql).
+It combines original migrations **0001 through 0013** and creates a QA school,
+session, term, class, five subjects **and ten student academic records**.
+
+**Important:** Only run this complete bundle in a **new, empty, dedicated
+staging Supabase project**. It rejects databases with existing school tables
+or Auth accounts. Open the script, verify the destination project, then
+**uncomment the `SET LOCAL hh.qa_staging_confirm` line** near the beginning.
+If you leave it commented, the script intentionally fails without changes.
+
+Run the bundle once using Supabase SQL Editor. Then skip manual steps 2 and 3
+below and proceed directly to account provisioning (step 4). The SQL does
+**not** create login passwords, Auth users or linked family/staff accounts,
+because those must be securely created by the Supabase Auth Admin API. The
+staging provisioner will link the ten pre-created student academic records
+to Auth accounts, create staff and parent accounts, and assign one shared
+temporary password from `STAGING_TEST_PASSWORD`.
+
+Do not run the bundle on production or on any database with previously
+applied migrations.
+
 ## Preconditions
 
 1. Create a dedicated staging Supabase project (separate URL, publishable key and server secret).
