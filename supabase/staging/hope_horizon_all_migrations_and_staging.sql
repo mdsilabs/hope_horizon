@@ -2501,7 +2501,7 @@ SELECT sch.id, cls.id, sess.id,
 FROM public.schools sch
 JOIN public.classes cls ON cls.school_id = sch.id AND cls.name = 'JSS 1 QA'
 JOIN public.academic_sessions sess ON sess.school_id = sch.id AND sess.name = '2026/2027'
-CROSS JOIN generate_series(1,10) AS n
+CROSS JOIN generate_series(1,10) AS seq(n)
 WHERE sch.name = 'Hope Horizon QA STAGING';
 
 DO $qa_verify$
