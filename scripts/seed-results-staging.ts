@@ -1,5 +1,5 @@
 /**
- * Dedicated STAGING project only. First apply supabase/staging/qa_results_fixture.sql.
+ * Dedicated STAGING project only. First apply migrations 0001-0013 and the staging fixture (or the guarded one-file staging bundle).
  * Provision 5 subject teachers, 1 class teacher, 1 principal, 10 students
  * and 10 parents with the SAME password provided privately via env.
  * No password or Supabase secret is committed or printed.
@@ -18,8 +18,13 @@ const requireEnv = (name: string) => {
 async function main() {
   if (process.env.ALLOW_STAGING_SEED !== "true") throw new Error("Set ALLOW_STAGING_SEED=true for dedicated staging only.");
   const url = requireEnv("STAGING_SUPABASE_URL");
-  const ref = new URL(url).hostname.split(".")[0];
-  if (ref !== requireEnv("EXPECTED_STAGING_PROJECT_REF")) throw new Error("Staging Supabase project mismatch.");
+  const parsedUrl = new URL(url);
+  const ref = parsedUrl.hostname.split(".")[0];
+  if (parsedUrl.protocol !== "https:" || parsedUrl.origin !== `https://${ref}.supabase.co` ||
+      parsedUrl.pathname !== "/" || parsedUrl.search || parsedUrl.hash ||
+      ref !== requireEnv("EXPECTED_STAGING_PROJECT_REF")) {
+    throw new Error("Staging Supabase project mismatch.");
+  }
   // Known Hope Horizon production reference must never be used for this fixture.
   if (ref === "iwfpdwihinhcwjgvmfei") throw new Error("Refusing to seed Hope Horizon's pinned production Supabase project.");
   const password = requireEnv("STAGING_TEST_PASSWORD");
@@ -79,11 +84,23 @@ async function main() {
     const n=String(i).padStart(2,"0");
     const studentName=`QA Student ${n}`,parentName=`QA Parent ${n}`;
     const stuUserId=await account("STUDENT",studentName,`qa.student.${n}@${domain}`);
-    const {data:student,error:se}=await db.from("students").insert({
-      user_id:stuUserId,school_id:schoolId,full_name:studentName,
-      admission_number:`QA/2026/${n}`,registration_number:`QA-REG-${n}`,
-      class_id:cls.id,current_academic_session_id:sessions[0].id,gender:i%2?"FEMALE":"MALE",
-    }).select("id").single();
+    const admissionNumber = `QA/2026/${n}`;
+    // The all-in-one SQL bundle creates ten academic student rows before
+    // accounts exist; the older minimal fixture does not. Support both.
+    const { data: existingStudent, error: existingStudentError } = await db.from("students")
+      .select("id,user_id").eq("school_id",schoolId).eq("class_id",cls.id)
+      .eq("admission_number",admissionNumber).maybeSingle();
+    if (existingStudentError) throw new Error(`Student lookup ${n}: ${existingStudentError.message}`);
+    if (existingStudent?.user_id) throw new Error(`Student ${n} already has an account.`);
+    const {data:student,error:se}=existingStudent
+      ? await db.from("students").update({user_id:stuUserId})
+          .eq("id",existingStudent.id).eq("school_id",schoolId).is("user_id",null)
+          .select("id").single()
+      : await db.from("students").insert({
+          user_id:stuUserId,school_id:schoolId,full_name:studentName,
+          admission_number:admissionNumber,registration_number:`QA-REG-${n}`,
+          class_id:cls.id,current_academic_session_id:sessions[0].id,gender:i%2?"FEMALE":"MALE",
+        }).select("id").single();
     if(se||!student)throw new Error(`Student ${n}: ${se?.message}`);
     const pUserId=await account("PARENT",parentName,`qa.parent.${n}@${domain}`);
     const {data:parent,error:pe}=await db.from("parents").insert({
