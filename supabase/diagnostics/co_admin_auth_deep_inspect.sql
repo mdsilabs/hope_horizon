@@ -1,6 +1,7 @@
 -- Hope Horizon Co-Admin 500 - deeper read-only inspection.
 -- Run only on the correct Hope Horizon Supabase project after reviewing SQL.
 -- Reports schema/trigger structure, not emails, names, passwords or secrets.
+-- Fixed: ORDER BY belongs inside jsonb_agg(... ORDER BY ...), not outside.
 -- No INSERT, UPDATE, DELETE or schema changes are performed.
 
 WITH auth_function AS (
@@ -41,7 +42,7 @@ checks AS (
     ) AS custom_profile_triggers,
     (
       SELECT COALESCE(jsonb_agg(jsonb_build_object(
-        'column',c.column_name,'type',c.data_type))
+        'column',c.column_name,'type',c.data_type)
         ORDER BY c.column_name),'[]'::jsonb)
       FROM information_schema.columns c
       WHERE c.table_schema='public' AND c.table_name='users'
