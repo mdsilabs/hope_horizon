@@ -23,7 +23,34 @@ export async function GET(){
     }
     if(data?.some(user=>!user.admin_tier))
       throw new AppError("Run migration 0008 to enable Co-Admin management.",503,"MIGRATION_REQUIRED");
-    return NextResponse.json({administrators:data??[],currentUserId:session.authUserId});
+
+    // Read-only readiness check. Show the actual blocker BEFORE an admin
+    // tries to create a privileged account, and don't reveal credentials.
+    let blockedReason: string | null=null;
+    const {data:guard,error:guardError}=await db.rpc("hh_onboarding_guard_ready");
+    if(guardError || guard!==true)
+      blockedReason="Install migration 0012 (password onboarding guard).";
+    const {data:capabilities,error:capabilitiesError}=await db.rpc("hh_portal_capabilities");
+    if(!blockedReason && (capabilitiesError || !capabilities?.auth_trigger || !capabilities?.authorization_guard))
+      blockedReason="Install the authentication/security migrations 0004 and 0005.";
+    if(!blockedReason && !(data??[]).some(user=>user.admin_tier==="PRIMARY" && user.is_active))
+      blockedReason="No active protected Primary Administrator exists. Review migration 0008.";
+    if(!blockedReason && !process.env.SUPABASE_SECRET_KEY && !process.env.SUPABASE_SERVICE_ROLE_KEY)
+      blockedReason="Set a server-only Supabase secret/service-role key in Vercel Production and redeploy.";
+    if(!blockedReason){
+      try{
+        const admin=createAdminClient();
+        const {error:adminError}=await admin.auth.admin.listUsers({page:1,perPage:1});
+        if(adminError)blockedReason="Supabase Auth Admin API rejected the server key. Check the Supabase project and Vercel credential.";
+      }catch{
+        blockedReason="Supabase Auth administration could not be reached. Review the server key and provider connection.";
+      }
+    }
+
+    return NextResponse.json({
+      administrators:data??[],currentUserId:session.authUserId,
+      creationReadiness:{ready:!blockedReason,message:blockedReason},
+    },{headers:{"Cache-Control":"no-store, private"}});
   }catch(error){return handleApiError(error);}
 }
 
