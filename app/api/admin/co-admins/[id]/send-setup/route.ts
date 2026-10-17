@@ -18,7 +18,14 @@ export async function POST(_request:Request,{params}:{params:Promise<{id:string}
     if(!user || user.admin_tier!=="CO_ADMIN")throw new NotFoundError("Co-Admin not found.");
     if(!user.is_active)throw new AppError("Reactivate this Co-Admin before sending setup email.",409);
     const status=await requestSetupEmail(createAdminClient(),user.email);
-    if(status!=="requested")throw new AppError("Could not request password-setup email. Check NEXT_PUBLIC_APP_URL and Auth SMTP.",503);
+    if(status==="invalid_redirect")throw new AppError(
+      "Co-Admin exists, but email setup cannot start: set NEXT_PUBLIC_APP_URL to https://hopehorizonacademy.vercel.app in Vercel Production, redeploy, and allowlist /reset-password in Supabase Auth.",
+      503,"EMAIL_REDIRECT_CONFIGURATION"
+    );
+    if(status==="auth_rejected")throw new AppError(
+      "Co-Admin exists, but Supabase Auth rejected the setup email. Check Supabase Authentication logs, SMTP provider, email sending limits and the verified recipient address. Alternatively, a Primary Administrator can issue a temporary password.",
+      503,"AUTH_EMAIL_DELIVERY"
+    );
     return NextResponse.json({message:"Password-setup email requested; confirm receipt with the Co-Admin."});
   }catch(error){return handleApiError(error);}
 }
