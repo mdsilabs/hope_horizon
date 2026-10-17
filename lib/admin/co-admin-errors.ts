@@ -46,3 +46,18 @@ export function diagnoseCoAdminCreateFailure(
     message: "Supabase Auth could not create this Co-Admin. Check Supabase Authentication logs, project credentials and account-provisioning migrations.",
   };
 }
+
+/**
+ * Keep provider diagnostic messages on the server, but redact the most
+ * common credential and account identifiers before logging.
+ * Never return this text to the client or persist it in audit records.
+ */
+export function sanitizeAuthErrorForServerLog(input: unknown): string {
+  if (typeof input !== "string") return "No provider message";
+  return input
+    .replace(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/gi, "[email]")
+    .replace(/\b(?:sb_(?:secret|publishable)_[a-zA-Z0-9_-]+|eyJ[a-zA-Z0-9._-]{20,})\b/g, "[credential]")
+    .replace(/https?:\/\/\S+/gi, "[url]")
+    .replace(/\b[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\b/gi, "[uuid]")
+    .slice(0, 350);
+}
