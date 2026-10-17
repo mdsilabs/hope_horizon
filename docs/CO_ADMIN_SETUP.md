@@ -83,3 +83,41 @@ verification must be performed against the actual Supabase project.
 - Create another Co-Admin through email flow; follow reset link and set
   password, then confirm admin access.
 - Confirm the original PRIMARY admin remains undeletable.
+
+## Existing Co-Admin created but setup email failed
+
+**Do not create a second account or run an Auth migration again.**
+The administrator profile is already provisioned; only the email setup failed.
+
+1. Check **Vercel → Environment Variables**:
+   `NEXT_PUBLIC_APP_URL=https://hopehorizonacademy.vercel.app` (Production, then redeploy).
+2. Check **Supabase → Authentication → URL Configuration**:
+   Site URL `https://hopehorizonacademy.vercel.app` and allowlisted redirect
+   `https://hopehorizonacademy.vercel.app/reset-password`.
+3. Check **Supabase → Authentication → SMTP Settings**. Supabase Auth's own
+   email transport is independent of the site's `SMTP_USER` and
+   `SMTP_PASSWORD` used for application notifications. For failures,
+   inspect **Supabase → Logs → Auth** and the Supabase email rate limit.
+   Do not attempt to deliver emails to `@example.test` QA accounts.
+4. In **/admin/co-admins**, choose **Setup email** on the already-created account.
+5. To proceed *without working email*, the **Primary Administrator** may
+   select **Issue temporary password** next to a Co-Admin whose
+   `must_change_password` is still true. Confirm the operation, copy
+   the one-time credential, and share it privately. The recipient uses
+   `/login` and must immediately change it at `/change-password`.
+
+Security guarantees of the fallback:
+- Primary Admin only, never the target Co-Admin itself.
+- Only pending, active Co-Admins from the same school.
+- Independently verifies the target Auth app_metadata role/tier/school.
+- Does not alter school, role, tier or the password-setup guard.
+- Uses an unpredictable one-time-display password, writes an audit event,
+  rejects repeated resets within two minutes, and prevents browser caching.
+- Once the Co-Admin completes onboarding, this recovery action is disabled.
+- A Co-Admin who loses their established password must use the normal
+  identity-verified recovery path, not this provisioning fallback.
+
+If clicking Setup email shows "Co-Admin exists, but ... invalid callback",
+fix `NEXT_PUBLIC_APP_URL`. If it says Supabase rejected the email,
+check Supabase Auth mail configuration/logs. In both cases, account
+creation has already succeeded.
