@@ -15,8 +15,13 @@ test("Auth trigger and missing key failures are actionable and safe",()=>{
  const brokenTrigger=diagnoseCoAdminCreateFailure({
    code:"unexpected_failure",status:500,message:"Database error saving new user",
  });
- assert.equal(brokenTrigger.code,"MIGRATION_REQUIRED");
- assert.match(brokenTrigger.message,/migrations 0008 and 0012/);
+ assert.equal(brokenTrigger.code,"AUTH_DATABASE_ERROR");
+ assert.match(brokenTrigger.message,/matching Postgres error/);
+ const actualLog=diagnoseCoAdminCreateFailure({
+   status:500,message:"Database error creating new user",
+ });
+ assert.equal(actualLog.code,"AUTH_DATABASE_ERROR");
+ assert.match(actualLog.message,/Do not rerun migrations/);
  const invalidKey=diagnoseCoAdminCreateFailure({status:401,code:"invalid_credentials"});
  assert.equal(invalidKey.code,"AUTH_CONFIGURATION_ERROR");
  assert.match(invalidKey.message,/SUPABASE_SECRET_KEY/);
