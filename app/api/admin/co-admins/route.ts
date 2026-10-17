@@ -13,7 +13,7 @@ export async function GET(){
     const session=await requireRole(["ADMIN"]);
     const db=await createClient();
     const {data,error}=await db.from("users")
-      .select("id,name,email,admin_tier,is_active,last_login_at,created_at")
+      .select("id,name,email,admin_tier,is_active,must_change_password,last_login_at,created_at")
       .eq("school_id",session.profile.school_id).eq("role","ADMIN")
       .order("created_at",{ascending:true}).limit(200);
     if (error) {
