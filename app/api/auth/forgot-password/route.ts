@@ -2,7 +2,8 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { forgotPasswordSchema } from "@/lib/validations/auth";
 import { recordAuditEntry } from "@/services/auditService";
-import { handleApiError } from "@/lib/utils/errors";
+import { AppError, handleApiError } from "@/lib/utils/errors";
+import { getApprovedRecoveryUrl } from "@/lib/admin/account-onboarding";
 
 /**
  * Delegates to Supabase Auth's built-in password recovery email, which
@@ -25,9 +26,17 @@ export async function POST(request: NextRequest) {
       .eq("is_active", true)
       .maybeSingle();
 
-    await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${process.env.NEXT_PUBLIC_APP_URL}/reset-password`,
+    const redirectTo = getApprovedRecoveryUrl();
+    if (!redirectTo) {
+      throw new AppError("Password recovery is not configured: set NEXT_PUBLIC_APP_URL to the HTTPS site origin.",503);
+    }
+    const { error: recoveryError } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo,
     });
+    if (recoveryError) {
+      console.error("Supabase Auth password recovery request failed; verify its redirect URL allowlist and email settings.");
+      // Never expose which email addresses have accounts.
+    }
 
     if (data) {
       await recordAuditEntry({
