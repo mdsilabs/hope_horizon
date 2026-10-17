@@ -4,7 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { coAdminCreateSchema } from "@/lib/validations/co-admin";
 import { generateUnusedPassword, generateTemporaryPassword, requestSetupEmail, requireProvisioningSecurity } from "@/lib/admin/account-onboarding";
-import { AppError, ConflictError, handleApiError } from "@/lib/utils/errors";
+import { AppError, handleApiError } from "@/lib/utils/errors";
+import { diagnoseCoAdminCreateFailure } from "@/lib/admin/co-admin-errors";
 
 export async function GET(){
   try{
@@ -14,7 +15,12 @@ export async function GET(){
       .select("id,name,email,admin_tier,is_active,last_login_at,created_at")
       .eq("school_id",session.profile.school_id).eq("role","ADMIN")
       .order("created_at",{ascending:true}).limit(200);
-    if(error)throw error;
+    if (error) {
+      // Missing migration 0008 results in a missing admin_tier column.
+      if (error.code === "42703" || error.code === "PGRST204")
+        throw new AppError("Install migration 0008 to enable Co-Admin management.",503,"MIGRATION_REQUIRED");
+      throw error;
+    }
     if(data?.some(user=>!user.admin_tier))
       throw new AppError("Run migration 0008 to enable Co-Admin management.",503,"MIGRATION_REQUIRED");
     return NextResponse.json({administrators:data??[],currentUserId:session.authUserId});
@@ -47,16 +53,25 @@ export async function POST(request:NextRequest){
         setup_method:setupMethod,
       },
     });
-    if(createError || !created.user)
-      throw new ConflictError("Unable to create this Co-Admin. Check whether the email already belongs to another account.");
+    if(createError || !created.user) {
+      const diagnosis=diagnoseCoAdminCreateFailure(createError);
+      // Log only code and status for diagnosis, never credentials or Auth tokens.
+      console.error("Co-Admin Auth creation failed", {
+        code: createError?.code || "unknown",
+        status: createError?.status || 0,
+      });
+      throw new AppError(diagnosis.message,diagnosis.status,diagnosis.code);
+    }
 
     const id=created.user.id;
     try{
-      const {data:profile,error:profileError}=await db.from("users")
-        .select("id,school_id,role,admin_tier,is_active")
+      // Read the freshly provisioned user with the already authorized
+      // server-side client; a new Co-Admin cannot pass onboarding RLS yet.
+      const {data:profile,error:profileError}=await admin.from("users")
+        .select("id,school_id,role,admin_tier,is_active,must_change_password")
         .eq("id",id).eq("school_id",schoolId).maybeSingle();
       if(profileError || !profile || profile.role!=="ADMIN" ||
-         profile.admin_tier!=="CO_ADMIN" || !profile.is_active)
+         profile.admin_tier!=="CO_ADMIN" || !profile.is_active || !profile.must_change_password)
         throw new Error("Co-Admin role verification failed.");
     }catch{
       const {error:cleanupError}=await admin.auth.admin.deleteUser(id);
