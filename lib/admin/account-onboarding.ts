@@ -28,13 +28,17 @@ export async function requireProvisioningSecurity() {
 
 export async function requestSetupEmail(
   admin: ReturnType<typeof createAdminClient>, email: string
-): Promise<"requested"|"not_sent"> {
+): Promise<"requested"|"invalid_redirect"|"auth_rejected"> {
   const redirectTo = getApprovedRecoveryUrl();
-  if (!redirectTo) return "not_sent";
+  if (!redirectTo) return "invalid_redirect";
   const {error} = await admin.auth.resetPasswordForEmail(email,{redirectTo});
   if (error) {
-    console.error("Supabase Auth setup-email request rejected (check email provider/redirect settings).");
-    return "not_sent";
+    // Never log recipient email, reset links, API keys or recoverable tokens.
+    console.error("Supabase Auth setup-email request rejected", {
+      status:error.status??0,
+      code:error.code??"unknown",
+    });
+    return "auth_rejected";
   }
   return "requested";
 }
