@@ -3,7 +3,7 @@ export type AuthProvisioningFailure = { code?: string; status?: number; message?
 export type ProvisioningDiagnosis = {
   message: string;
   status: number;
-  code: "ACCOUNT_EXISTS" | "AUTH_CONFIGURATION_ERROR" | "MIGRATION_REQUIRED" | "INVALID_EMAIL" | "AUTH_PROVISIONING_FAILED";
+  code: "ACCOUNT_EXISTS" | "AUTH_CONFIGURATION_ERROR" | "AUTH_DATABASE_ERROR" | "INVALID_EMAIL" | "AUTH_PROVISIONING_FAILED";
 };
 
 export function diagnoseCoAdminCreateFailure(
@@ -34,11 +34,13 @@ export function diagnoseCoAdminCreateFailure(
       message: "Supabase Auth administration is unavailable. Check the server-only SUPABASE_SECRET_KEY or SUPABASE_SERVICE_ROLE_KEY for the correct project.",
     };
   }
-  if (code === "unexpected_failure" || code === "database_error_saving_new_user" ||
-      message.includes("database error saving new user")) {
+  if (code === "database_error_saving_new_user" ||
+      code === "database_error_creating_new_user" ||
+      message.includes("database error saving new user") ||
+      message.includes("database error creating new user")) {
     return {
-      code: "MIGRATION_REQUIRED", status: 503,
-      message: "Supabase rejected the new user in its database trigger. Check migrations 0008 and 0012, primary-admin setup, and Supabase Authentication logs.",
+      code: "AUTH_DATABASE_ERROR", status: 503,
+      message: "Supabase could not save the account in its database. Inspect the matching Postgres error in Supabase Logs to identify the failed trigger, constraint or permission. Do not rerun migrations without checking the cause.",
     };
   }
   return {
