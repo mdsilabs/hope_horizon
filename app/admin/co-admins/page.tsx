@@ -7,7 +7,7 @@ import {Input} from "@/components/ui/Input";
 
 type Administrator={
   id:string;name:string;email:string;admin_tier:"PRIMARY"|"CO_ADMIN";
-  is_active:boolean;last_login_at:string|null;created_at:string;
+  is_active:boolean;must_change_password:boolean;last_login_at:string|null;created_at:string;
 };
 type Payload={administrators:Administrator[];currentUserId:string;creationReadiness?:{ready:boolean;message:string|null}};
 async function call<T>(url:string,options?:RequestInit):Promise<T>{
@@ -75,8 +75,27 @@ export default function CoAdminManagementPage(){
     }catch(e){setError(e instanceof Error?e.message:"Could not send setup email.");}
     finally{setBusyId("");}
   }
+  async function issuePassword(admin:Administrator){
+    if(admin.admin_tier!=="CO_ADMIN"||!admin.must_change_password||!admin.is_active)return;
+    if(credential&&!window.confirm("The currently displayed temporary credential will be lost. Have you copied it securely?"))return;
+    if(!window.confirm("Replace the pending Co-Admin setup credential with a new temporary password? The old credential will stop working."))return;
+    setBusyId(admin.id);setNotice("");setError("");
+    try{
+      const result=await call<{email:string;temporaryPassword:string;message:string}>(
+        "/api/admin/co-admins/"+admin.id+"/issue-temporary-password",{
+          method:"POST",headers:{"Content-Type":"application/json"},
+          body:JSON.stringify({confirm:"ISSUE_TEMPORARY_PASSWORD"}),
+        }
+      );
+      setCredential({email:result.email,password:result.temporaryPassword});
+      setCopied(false);setNotice(result.message);
+      await load();
+    }catch(e){setError(e instanceof Error?e.message:"Unable to issue a temporary password.");}
+    finally{setBusyId("");}
+  }
   const primaries=admins.filter(x=>x.admin_tier==="PRIMARY");
   const collaborators=admins.filter(x=>x.admin_tier==="CO_ADMIN");
+  const primarySignedIn=primaries.some(x=>x.id===currentUserId);
   return <div className="mx-auto max-w-5xl space-y-6">
     <div className="flex flex-wrap items-start justify-between gap-3">
       <div>
@@ -188,10 +207,16 @@ export default function CoAdminManagementPage(){
               <span className={"mt-1 inline-block text-xs font-medium "+(a.is_active?"text-green-700":"text-red-700")}>
                 {a.is_active?"Active":"Inactive"}
               </span>
+              {a.must_change_password&&<span className="ml-3 text-xs text-amber-800">Password setup pending</span>}
             </div>
             <div className="flex flex-wrap gap-2">
               <Button size="sm" variant="secondary" disabled={!!busyId||creating||!a.is_active}
                 onClick={()=>void resend(a)}><Mail className="h-4 w-4"/>Setup email</Button>
+              {primarySignedIn&&a.must_change_password&&a.is_active&&
+                <Button size="sm" variant="secondary" disabled={!!busyId||creating}
+                  onClick={()=>void issuePassword(a)}>
+                  <LockKeyhole className="h-4 w-4"/>Issue temporary password
+                </Button>}
               <Button size="sm" variant="secondary" disabled={!!busyId||creating||a.id===currentUserId}
                 onClick={()=>void change(a)}>{a.is_active?"Deactivate":"Reactivate"}</Button>
             </div>
