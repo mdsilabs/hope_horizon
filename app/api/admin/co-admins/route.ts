@@ -6,7 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { coAdminCreateSchema } from "@/lib/validations/co-admin";
 import { generateUnusedPassword, generateTemporaryPassword, requestSetupEmail, requireProvisioningSecurity } from "@/lib/admin/account-onboarding";
 import { AppError, handleApiError } from "@/lib/utils/errors";
-import { diagnoseCoAdminCreateFailure } from "@/lib/admin/co-admin-errors";
+import { diagnoseCoAdminCreateFailure, sanitizeAuthErrorForServerLog } from "@/lib/admin/co-admin-errors";
 
 export async function GET(){
   try{
@@ -91,6 +91,7 @@ export async function POST(request:NextRequest){
         incident,
         code:createError?.code||"unknown",
         status:createError?.status||0,
+        providerMessage:sanitizeAuthErrorForServerLog(createError?.message),
         databaseTriggerIndicated:message.includes("database error")||message.includes("saving new user"),
         emailRejectionIndicated:message.includes("email")||message.includes("address"),
       });
