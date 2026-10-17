@@ -24,9 +24,10 @@ DECLARE
   v_school_id uuid;
 BEGIN
   -- A number of GoTrue updates do not modify the trusted claims.
-  IF TG_OP = 'UPDATE'
-     AND NEW.raw_app_meta_data IS NOT DISTINCT FROM OLD.raw_app_meta_data THEN
-    RETURN NEW;
+  IF TG_OP = 'UPDATE' THEN
+    IF NEW.raw_app_meta_data IS NOT DISTINCT FROM OLD.raw_app_meta_data THEN
+      RETURN NEW;
+    END IF;
   END IF;
 
   v_school_text := NULLIF(NEW.raw_app_meta_data ->> 'school_id','');
