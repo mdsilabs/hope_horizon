@@ -1,6 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import { AppError } from "@/lib/utils/errors";
+import { resolveRecoveryRedirectUrl } from "@/lib/auth/recovery-redirect";
 import { createClient } from "@/lib/supabase/server";
 import type { createAdminClient } from "@/lib/supabase/admin";
 
@@ -13,15 +14,7 @@ export function generateUnusedPassword() {
 }
 
 export function getApprovedRecoveryUrl(): string | null {
-  const origin = process.env.NEXT_PUBLIC_APP_URL;
-  if (!origin) return null;
-  try {
-    const url = new URL(origin);
-    if (!((url.protocol==="https:" && url.hostname) ||
-      (url.protocol==="http:" && url.hostname==="localhost"))) return null;
-    if (url.username || url.password || url.search || url.hash || url.pathname!=="/") return null;
-    return new URL("/reset-password",url).toString();
-  } catch { return null; }
+  return resolveRecoveryRedirectUrl(process.env.NEXT_PUBLIC_APP_URL, process.env.NODE_ENV);
 }
 
 /** Fails closed when the hardened auth trigger or guard is not installed. */
