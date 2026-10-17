@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { randomUUID } from "node:crypto";
 import { requireRole } from "@/lib/auth/requireSession";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -82,12 +83,21 @@ export async function POST(request:NextRequest){
     });
     if(createError || !created.user) {
       const diagnosis=diagnoseCoAdminCreateFailure(createError);
-      // Log only code and status for diagnosis, never credentials or Auth tokens.
+      const incident= randomUUID().slice(0,8);
+      // Vercel's server log provides a correlation ID for matching the
+      // Supabase Auth/Postgres log entry. Never log emails or secrets.
+      const message=(createError?.message||"").toLowerCase();
       console.error("Co-Admin Auth creation failed", {
-        code: createError?.code || "unknown",
-        status: createError?.status || 0,
+        incident,
+        code:createError?.code||"unknown",
+        status:createError?.status||0,
+        databaseTriggerIndicated:message.includes("database error")||message.includes("saving new user"),
+        emailRejectionIndicated:message.includes("email")||message.includes("address"),
       });
-      throw new AppError(diagnosis.message,diagnosis.status,diagnosis.code);
+      throw new AppError(
+        diagnosis.message+" Incident reference: "+incident,
+        diagnosis.status,diagnosis.code,
+      );
     }
 
     const id=created.user.id;
