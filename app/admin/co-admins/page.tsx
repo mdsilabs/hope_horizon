@@ -9,7 +9,7 @@ type Administrator={
   id:string;name:string;email:string;admin_tier:"PRIMARY"|"CO_ADMIN";
   is_active:boolean;last_login_at:string|null;created_at:string;
 };
-type Payload={administrators:Administrator[];currentUserId:string};
+type Payload={administrators:Administrator[];currentUserId:string;creationReadiness?:{ready:boolean;message:string|null}};
 async function call<T>(url:string,options?:RequestInit):Promise<T>{
   const response=await fetch(url,{cache:"no-store",...options});
   const result=await response.json();
@@ -19,6 +19,7 @@ async function call<T>(url:string,options?:RequestInit):Promise<T>{
 export default function CoAdminManagementPage(){
   const [admins,setAdmins]=useState<Administrator[]>([]);
   const [currentUserId,setCurrentUserId]=useState("");
+  const [creationReadiness,setCreationReadiness]=useState<{ready:boolean;message:string|null}|null>(null);
   const [name,setName]=useState(""),[email,setEmail]=useState("");
   const [setupMethod,setSetupMethod]=useState<"TEMPORARY_PASSWORD"|"EMAIL_LINK">("TEMPORARY_PASSWORD");
   const [credential,setCredential]=useState<{email:string;password:string}|null>(null);
@@ -30,7 +31,8 @@ export default function CoAdminManagementPage(){
     setLoading(true);
     try{
       const data=await call<Payload>("/api/admin/co-admins");
-      setAdmins(data.administrators);setCurrentUserId(data.currentUserId);setError("");
+      setAdmins(data.administrators);setCurrentUserId(data.currentUserId);
+      setCreationReadiness(data.creationReadiness??null);setError("");
     }catch(e){setError(e instanceof Error?e.message:"Unable to load administrators.");}
     finally{setLoading(false);}
   },[]);
@@ -94,6 +96,11 @@ export default function CoAdminManagementPage(){
         Co-Admins can manage the same school operations as an Administrator. They cannot deactivate,
         demote, change the school of, or delete a primary Administrator.
       </p>
+      {creationReadiness && !creationReadiness.ready &&
+        <p role="alert" className="mt-3 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900">
+          Co-Admin creation is unavailable: {creationReadiness.message}
+          {" "}Open <a href="/admin/integrations" className="font-semibold underline">Integration health</a> to review your configuration.
+        </p>}
       <form onSubmit={create} className="mt-4 flex flex-wrap items-end gap-3">
         <div className="min-w-52 flex-1">
           <Input id="coadmin-name" required label="Full name" maxLength={120}
@@ -123,7 +130,7 @@ export default function CoAdminManagementPage(){
             </label>
           </div>
         </fieldset>
-        <Button type="submit" disabled={creating||!!busyId} isLoading={creating}>
+        <Button type="submit" disabled={creating||!!busyId||loading||creationReadiness?.ready===false} isLoading={creating}>
           <Plus className="h-4 w-4"/>{setupMethod==="TEMPORARY_PASSWORD"?"Create without email":"Create and email link"}
         </Button>
       </form>
