@@ -4,6 +4,8 @@ import Link from "next/link";
 import {AlertTriangle,ArrowRight,ClipboardList,RefreshCw,Send} from "lucide-react";
 import {Card} from "@/components/ui/Card";
 import {Button} from "@/components/ui/Button";
+import {submitIrregularitySchema,classIrregularityDecisionSchema,
+  parseScoreInput,validateScoreLimits} from "@/lib/validations/irregularities";
 
 type RequestKind="ADD_STUDENT"|"EDIT_MARK";
 type Status="PENDING_CLASS_TEACHER"|"PENDING_ADMIN"|"APPROVED_PENDING_APPLICATION"|
@@ -11,7 +13,7 @@ type Status="PENDING_CLASS_TEACHER"|"PENDING_ADMIN"|"APPROVED_PENDING_APPLICATIO
 type ClassItem={id:string;name:string;classTeacherName:string;classTeacherId:string|null;classTeacherReady:boolean;isClassTeacher:boolean};
 type Term={id:string;name:string;sessionName:string};
 type Student={id:string;class_id:string;full_name:string;admission_number:string};
-type Subject={classId:string;subjectId:string;name:string;code:string};
+type Subject={classId:string;subjectId:string;name:string;code:string;caMax:number;examMax:number};
 type RequestRow={
   id:string;kind:RequestKind;class_id:string;term_id:string;subject_id:string|null;
   student_id:string|null;class_teacher_id:string;requester_id:string;
@@ -42,6 +44,11 @@ export default function TeacherIrregularitiesPage(){
   const [reviewNotes,setReviewNotes]=useState<Record<string,string>>({});
   const [loading,setLoading]=useState(true),[busy,setBusy]=useState("");
   const [error,setError]=useState(""),[notice,setNotice]=useState("");
+  const [fieldErrors,setFieldErrors]=useState<Record<string,string>>({});
+  const [reviewErrors,setReviewErrors]=useState<Record<string,string>>({});
+  const clearField=(key:string)=>setFieldErrors(prev=>({...prev,[key]:""}));
+  const fieldError=(key:string)=>fieldErrors[key]?
+    <p role="alert" className="mt-1 text-xs font-medium text-red-700">{fieldErrors[key]}</p>:null;
   const load=useCallback(async()=>{
     setLoading(true);
     try{
@@ -65,40 +72,88 @@ export default function TeacherIrregularitiesPage(){
   const cls=data?.classes.find(c=>c.id===classId);
   const students=useMemo(()=>(data?.students??[]).filter(s=>s.class_id===classId),[data,classId]);
   const subjects=useMemo(()=>(data?.subjects??[]).filter(s=>s.classId===classId),[data,classId]);
-  const chosenSubject=subjects.some(s=>s.subjectId===subjectId)?subjectId:subjects[0]?.subjectId??"";
-  const chosenStudent=students.some(s=>s.id===studentId)?studentId:students[0]?.id??"";
+  // Explicit selection avoids silently submitting a correction for the
+  // first student or subject when the teacher has not chosen one.
+  const chosenSubject=subjectId;
+  const chosenStudent=studentId;
+  const selectedSubject=subjects.find(s=>s.subjectId===chosenSubject);
   async function submit(e:FormEvent<HTMLFormElement>){
-    e.preventDefault();setError("");setNotice("");
-    if(!cls?.classTeacherReady){setError("Ask the administrator to assign exactly one active class teacher first.");return;}
-    if(kind==="EDIT_MARK"&&(!chosenSubject||!chosenStudent)){setError("Choose a student and an authorized class subject.");return;}
-    const destination=cls.isClassTeacher?"school administrator":cls.classTeacherName;
+    e.preventDefault();setError("");setNotice("");setFieldErrors({});
+    const errors:Record<string,string>={};
+    if(!cls?.classTeacherReady)
+      errors.classId="Ask the administrator to assign exactly one active class teacher first.";
+    if(!data?.terms.some(t=>t.id===termId))
+      errors.termId="Choose a valid academic term.";
+    if(kind==="EDIT_MARK"){
+      if(!students.some(student=>student.id===chosenStudent))
+        errors.studentId="Choose a student in the selected class.";
+      if(!selectedSubject)
+        errors.subjectId="Choose a subject assigned to you or your class.";
+    }
+    const parsedCa=parseScoreInput(ca),parsedExam=parseScoreInput(exam);
+    const draft=kind==="ADD_STUDENT"?
+      {kind,classId,termId,fullName,admissionNumber,reason}:
+      {kind,classId,termId,studentId:chosenStudent,subjectId:chosenSubject,
+        ca:parsedCa??Number.NaN,exam:parsedExam??Number.NaN,reason};
+    const parsed=submitIrregularitySchema.safeParse(draft);
+    if(!parsed.success){
+      for(const issue of parsed.error.issues){
+        const key=String(issue.path[0]??"form");
+        if(!errors[key])errors[key]=issue.message;
+      }
+    }
+    if(kind==="EDIT_MARK"){
+      if(parsedCa===null)errors.ca="Enter a CA score using no more than two decimal places.";
+      if(parsedExam===null)errors.exam="Enter an exam score using no more than two decimal places.";
+      if(selectedSubject&&parsedCa!==null&&parsedExam!==null){
+        const limitErrors=validateScoreLimits(
+          parsedCa,parsedExam,selectedSubject.caMax,selectedSubject.examMax);
+        if(limitErrors.ca)errors.ca=limitErrors.ca;
+        if(limitErrors.exam)errors.exam=limitErrors.exam;
+      }
+    }
+    if(Object.keys(errors).length||!parsed.success){
+      setFieldErrors(errors);
+      setError("Please correct the highlighted fields before submitting.");
+      return;
+    }
+    const destination=cls!.isClassTeacher?"school administrator":cls!.classTeacherName;
     if(!window.confirm("Send this request to "+destination+"? Published results will remain unchanged."))return;
     setBusy("submit");
     try{
-      const payload=kind==="ADD_STUDENT"?
-        {kind,classId,termId,fullName,admissionNumber,reason}:
-        {kind,classId,termId,studentId:chosenStudent,subjectId:chosenSubject,
-          ca:Number(ca),exam:Number(exam),reason};
       const response=await fetch("/api/teacher/irregularities",{
-        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(payload),
+        method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(parsed.data),
       });
       const json=await response.json();
-      if(!response.ok)throw new Error(getError(json));
+      if(!response.ok){
+        const details=(json as {error?:{details?:Record<string,string[]>}}).error?.details;
+        if(details){
+          const next:Record<string,string>={};
+          for(const [key,values] of Object.entries(details))next[key]=values[0]??"Invalid field.";
+          setFieldErrors(next);
+        }
+        throw new Error(getError(json));
+      }
       setNotice("Request recorded. Track its progress below.");
-      setFullName("");setAdmissionNumber("");setCa("");setExam("");setReason("");
+      setFullName("");setAdmissionNumber("");setCa("");setExam("");setReason("");setFieldErrors({});
       await load();
     }catch(e){setError(e instanceof Error?e.message:"Unable to submit request.");}
     finally{setBusy("");}
   }
   async function review(row:RequestRow,action:"ENDORSE"|"REJECT"){
     const note=(reviewNotes[row.id]??"").trim();
-    if(action==="REJECT"&&note.length<10){setError("Give a rejection reason of at least 10 characters.");return;}
+    const checked=classIrregularityDecisionSchema.safeParse({action,note});
+    if(!checked.success){
+      setReviewErrors(prev=>({...prev,[row.id]:checked.error.issues[0]?.message??"Invalid review note."}));
+      return;
+    }
+    setReviewErrors(prev=>({...prev,[row.id]:""}));
     if(!window.confirm(action==="ENDORSE"?"Forward this request to an administrator?":"Decline this request?"))return;
     setBusy(row.id);setError("");setNotice("");
     try{
       const response=await fetch("/api/teacher/irregularities/"+row.id+"/review",{
         method:"POST",headers:{"Content-Type":"application/json"},
-        body:JSON.stringify({action,note}),
+        body:JSON.stringify(checked.data),
       });
       const json=await response.json();
       if(!response.ok)throw new Error(getError(json));
@@ -158,9 +213,13 @@ export default function TeacherIrregularitiesPage(){
         <div className="space-y-2 border-t pt-3">
           <label className="block text-sm font-semibold text-slate-700" htmlFor={"note-"+row.id}>Review notes</label>
           <textarea id={"note-"+row.id} value={reviewNotes[row.id]??""} maxLength={1000}
-            onChange={e=>setReviewNotes(v=>({...v,[row.id]:e.target.value}))}
+            aria-invalid={!!reviewErrors[row.id]}
+            onChange={e=>{setReviewNotes(v=>({...v,[row.id]:e.target.value}));
+              setReviewErrors(v=>({...v,[row.id]:""}));}}
             placeholder="Review the irregularity before forwarding it" rows={2}
-            className="w-full rounded-xl border border-slate-300 p-3 text-sm"/>
+            className={"w-full rounded-xl border p-3 text-sm "+(reviewErrors[row.id]?"border-red-500":"border-slate-300")}/>
+          {reviewErrors[row.id]&&<p role="alert" className="text-xs text-red-700">{reviewErrors[row.id]}</p>}
+          <p className="text-xs text-slate-500">{(reviewNotes[row.id]??"").trim().length}/1,000 characters; rejection requires at least 10.</p>
           <div className="flex flex-wrap gap-2">
             <Button disabled={!!busy} onClick={()=>void review(row,"ENDORSE")}>
               <ArrowRight className="h-4 w-4"/> Endorse to administrator
@@ -199,19 +258,21 @@ export default function TeacherIrregularitiesPage(){
           </p>
         </div>
         {!allAssigned?<p className="text-sm text-amber-800">You have no assigned classes. Ask an administrator to assign you a class or subject.</p>:
-        <form className="grid gap-4" onSubmit={submit}>
+        <form className="grid gap-4" onSubmit={submit} noValidate>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">Class
               <select className="mt-1 w-full rounded-xl border p-3" value={classId}
-                onChange={e=>{setClassId(e.target.value);setSubjectId("");setStudentId("");}}>
+                onChange={e=>{setClassId(e.target.value);setSubjectId("");setStudentId("");setFieldErrors({});}}>
                 {data?.classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
+              {fieldError("classId")}
             </label>
             <label className="text-sm font-medium">Academic term
               <select className="mt-1 w-full rounded-xl border p-3" value={termId}
-                onChange={e=>setTermId(e.target.value)}>
+                onChange={e=>{setTermId(e.target.value);clearField("termId");}}>
                 {data?.terms.map(t=><option key={t.id} value={t.id}>{t.sessionName} · {t.name}</option>)}
               </select>
+              {fieldError("termId")}
             </label>
           </div>
           <p className="rounded-xl bg-brand-50 p-3 text-sm text-brand-900">
@@ -224,7 +285,7 @@ export default function TeacherIrregularitiesPage(){
             <AlertTriangle className="h-4 w-4"/> Contact administration to assign exactly one class teacher.</p>}
           <label className="text-sm font-medium">Request type
             <select className="mt-1 w-full rounded-xl border p-3" value={kind}
-              onChange={e=>setKind(e.target.value as RequestKind)}>
+              onChange={e=>{setKind(e.target.value as RequestKind);setFieldErrors({});}}>
               <option value="ADD_STUDENT">Add missing student</option>
               <option value="EDIT_MARK">Correct student's subject marks</option>
             </select>
@@ -232,43 +293,59 @@ export default function TeacherIrregularitiesPage(){
           {kind==="ADD_STUDENT"?<div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">Student's full name
               <input required minLength={2} maxLength={120} className="mt-1 w-full rounded-xl border p-3"
-                value={fullName} onChange={e=>setFullName(e.target.value)}/>
+                value={fullName} onChange={e=>{setFullName(e.target.value);clearField("fullName");}}
+                aria-invalid={!!fieldErrors.fullName}/>
+              {fieldError("fullName")}
             </label>
             <label className="text-sm font-medium">Admission number
               <input required minLength={2} maxLength={50} className="mt-1 w-full rounded-xl border p-3"
-                value={admissionNumber} onChange={e=>setAdmissionNumber(e.target.value)}/>
+                value={admissionNumber} onChange={e=>{setAdmissionNumber(e.target.value);clearField("admissionNumber");}}
+                aria-invalid={!!fieldErrors.admissionNumber}/>
+              {fieldError("admissionNumber")}
             </label>
           </div>:<>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-medium">Student
                 <select required className="mt-1 w-full rounded-xl border p-3"
-                  value={chosenStudent} onChange={e=>setStudentId(e.target.value)}>
+                  value={chosenStudent} onChange={e=>{setStudentId(e.target.value);clearField("studentId");}}
+                  aria-invalid={!!fieldErrors.studentId}>
+                  <option value="">Choose a student</option>
                   {students.map(s=><option key={s.id} value={s.id}>{s.full_name} · {s.admission_number}</option>)}
                 </select>
+                {fieldError("studentId")}
               </label>
               <label className="text-sm font-medium">{cls?.isClassTeacher?"Subject in my class":"My assigned subject"}
                 <select required className="mt-1 w-full rounded-xl border p-3"
-                  value={chosenSubject} onChange={e=>setSubjectId(e.target.value)}>
+                  value={chosenSubject} onChange={e=>{setSubjectId(e.target.value);clearField("subjectId");}}
+                  aria-invalid={!!fieldErrors.subjectId}>
+                  <option value="">Choose a subject</option>
                   {subjects.map(s=><option key={s.subjectId} value={s.subjectId}>{s.name} ({s.code})</option>)}
                 </select>
+                {fieldError("subjectId")}
               </label>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <label className="text-sm font-medium">Proposed CA score
-                <input type="number" required min={0} max={100} step=".5"
-                  className="mt-1 w-full rounded-xl border p-3" value={ca} onChange={e=>setCa(e.target.value)}/>
+              <label className="text-sm font-medium">Proposed CA score {selectedSubject?"(maximum "+selectedSubject.caMax+")":""}
+                <input type="number" required min={0} max={100} step="0.01"
+                  className="mt-1 w-full rounded-xl border p-3" value={ca} onChange={e=>{setCa(e.target.value);clearField("ca");}}
+                  aria-invalid={!!fieldErrors.ca}/> 
+                {fieldError("ca")}
               </label>
-              <label className="text-sm font-medium">Proposed exam score
+              <label className="text-sm font-medium">Proposed exam score {selectedSubject?"(maximum "+selectedSubject.examMax+")":""}
                 <input type="number" required min={0} max={100} step=".5"
-                  className="mt-1 w-full rounded-xl border p-3" value={exam} onChange={e=>setExam(e.target.value)}/>
+                  className="mt-1 w-full rounded-xl border p-3" value={exam} onChange={e=>{setExam(e.target.value);clearField("exam");}}
+                  aria-invalid={!!fieldErrors.exam}/> 
+                {fieldError("exam")}
               </label>
             </div>
           </>}
           <label className="text-sm font-medium">Reason for the irregularity
             <textarea required minLength={10} maxLength={1000} rows={3}
-              className="mt-1 w-full rounded-xl border p-3" value={reason}
+              className="mt-1 w-full rounded-xl border p-3" value={reason} aria-invalid={!!fieldErrors.reason}
               placeholder="Explain what happened, including when the issue was noticed."
-              onChange={e=>setReason(e.target.value)}/>
+              onChange={e=>{setReason(e.target.value);clearField("reason");}}/>
+            {fieldError("reason")}
+            <p className="mt-1 text-xs text-slate-500">{reason.trim().length}/1,000 characters. Minimum 10 characters.</p>
           </label>
           <Button type="submit" disabled={!!busy||loading||!cls?.classTeacherReady||!termId}>
             <Send className="h-4 w-4"/> Submit to {cls?.isClassTeacher?"administrator":cls?.classTeacherName??"class teacher"}
