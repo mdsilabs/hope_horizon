@@ -27,6 +27,15 @@ export async function GET(){
 
     const ownClassIds=(ownClassResult.data??[]).map(x=>x.class_id);
     const subjectLinks=subjectResult.data??[];
+    // Class teachers can report irregularities for all subjects in their
+    // assigned class, even subjects taught by someone else. The database
+    // function independently verifies their class-teacher role.
+    const {data:allClassSubjects,error:classSubjectError}=ownClassIds.length
+      ?await db.from("class_subjects")
+        .select("class_id,subject_id,subjects(id,name,code,is_active,school_id)")
+        .in("class_id",ownClassIds)
+      :{data:[],error:null};
+    if(classSubjectError)throw new AppError("Could not load subjects assigned to your classes.",503);
     const classIds=Array.from(new Set([...ownClassIds,...subjectLinks.map(x=>x.class_id)]));
     const [classesResult,staffResult,studentsResult,schoolResult]=await Promise.all([
       classIds.length?db.from("classes").select("id,name,arm,is_active")
@@ -59,6 +68,7 @@ export async function GET(){
           userIds.length===0 ? "Not assigned" : "Multiple teachers assigned",
         classTeacherId:userIds.length===1?userIds[0]:null,
         classTeacherReady:userIds.length===1,
+        isClassTeacher:ownClassIds.includes(c.id),
       };
     });
     const requestIds=requests.map(r=>r.id);
@@ -73,10 +83,15 @@ export async function GET(){
       classes:classTeachers,terms:(termsResult.data??[]).map(t=>({
         id:t.id,name:t.name,sessionName:t.academic_sessions?.name??"",
       })),students:studentsResult.data??[],
-      subjects:subjectLinks.map(s=>({
-        classId:s.class_id,subjectId:s.subject_id,
-        name:s.subjects?.name??"Subject",code:s.subjects?.code??"",
-      })),
+      subjects:Array.from(new Map([
+        ...subjectLinks.filter(s=>s.subjects)
+          .map(s=>({classId:s.class_id,subjectId:s.subject_id,
+            name:s.subjects!.name,code:s.subjects!.code})),
+        ...(allClassSubjects??[])
+          .filter(s=>s.subjects?.is_active&&s.subjects?.school_id===schoolId)
+          .map(s=>({classId:s.class_id,subjectId:s.subject_id,
+            name:s.subjects!.name,code:s.subjects!.code})),
+      ].map(s=>[s.classId+":"+s.subjectId,s])).values()),
       requests:requests.map(r=>({
         ...r,classTeacherName:names[r.class_teacher_id]??"Class teacher",
         requesterName:names[r.requester_id]??"Teacher",
