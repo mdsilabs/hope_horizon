@@ -529,9 +529,58 @@ export interface Database {
           { foreignKeyName: "audit_logs_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
         ];
       };
+      hh_irregularity_requests: {
+        Row: {
+          id:string;school_id:string;term_id:string;class_id:string;
+          subject_id:string|null;student_id:string|null;requester_id:string;
+          class_teacher_id:string;kind:"ADD_STUDENT"|"EDIT_MARK";
+          payload:Record<string,unknown>;reason:string;
+          status:"PENDING_CLASS_TEACHER"|"PENDING_ADMIN"|"APPROVED_PENDING_APPLICATION"|
+                 "REJECTED_CLASS_TEACHER"|"REJECTED_ADMIN";
+          class_review_note:string|null;class_reviewed_by:string|null;class_reviewed_at:string|null;
+          admin_decision_note:string|null;admin_decided_by:string|null;admin_decided_at:string|null;
+          created_at:string;updated_at:string;
+        };
+        Insert:Partial<Database["public"]["Tables"]["hh_irregularity_requests"]["Row"]> & {
+          school_id:string;term_id:string;class_id:string;requester_id:string;
+          class_teacher_id:string;kind:"ADD_STUDENT"|"EDIT_MARK";payload:Record<string,unknown>;reason:string;
+        };
+        Update:Partial<Database["public"]["Tables"]["hh_irregularity_requests"]["Row"]>;
+        Relationships:[
+          {foreignKeyName:"hh_irregularity_requests_school_id_fkey";columns:["school_id"];referencedRelation:"schools";referencedColumns:["id"]},
+          {foreignKeyName:"hh_irregularity_requests_term_id_fkey";columns:["term_id"];referencedRelation:"terms";referencedColumns:["id"]},
+          {foreignKeyName:"hh_irregularity_requests_class_id_fkey";columns:["class_id"];referencedRelation:"classes";referencedColumns:["id"]},
+          {foreignKeyName:"hh_irregularity_requests_subject_id_fkey";columns:["subject_id"];referencedRelation:"subjects";referencedColumns:["id"]},
+          {foreignKeyName:"hh_irregularity_requests_student_id_fkey";columns:["student_id"];referencedRelation:"students";referencedColumns:["id"]},
+          {foreignKeyName:"hh_irregularity_requests_requester_id_fkey";columns:["requester_id"];referencedRelation:"users";referencedColumns:["id"]},
+          {foreignKeyName:"hh_irregularity_requests_class_teacher_id_fkey";columns:["class_teacher_id"];referencedRelation:"users";referencedColumns:["id"]}
+        ];
+      };
+      hh_irregularity_events: {
+        Row:{id:number;request_id:string;school_id:string;actor_id:string;
+          event_type:"SUBMITTED"|"CLASS_ENDORSED"|"CLASS_REJECTED"|"ADMIN_APPROVED"|"ADMIN_REJECTED";
+          note:string|null;created_at:string};
+        Insert:Partial<Database["public"]["Tables"]["hh_irregularity_events"]["Row"]> & {
+          request_id:string;school_id:string;actor_id:string;event_type:"SUBMITTED"|"CLASS_ENDORSED"|"CLASS_REJECTED"|"ADMIN_APPROVED"|"ADMIN_REJECTED";
+        };
+        Update:Partial<Database["public"]["Tables"]["hh_irregularity_events"]["Row"]>;
+        Relationships:[
+          {foreignKeyName:"hh_irregularity_events_request_id_fkey";columns:["request_id"];referencedRelation:"hh_irregularity_requests";referencedColumns:["id"]}
+        ];
+      };
     };
     Views: Record<string, never>;
     Functions: {
+      hh_submit_irregularity:{
+        Args:{p_kind:string;p_class_id:string;p_term_id:string;p_subject_id:string|null;
+          p_student_id:string|null;p_payload:Record<string,unknown>;p_reason:string};Returns:string;
+      };
+      hh_class_review_irregularity:{
+        Args:{p_request_id:string;p_action:string;p_note:string};Returns:string;
+      };
+      hh_admin_review_irregularity:{
+        Args:{p_request_id:string;p_action:string;p_note:string};Returns:string;
+      };
       hh_onboarding_guard_ready:{Args:Record<string,never>;Returns:boolean};
       hh_save_class_report_entries:{
         Args:{p_class_id:string;p_term_id:string;p_entries:{
