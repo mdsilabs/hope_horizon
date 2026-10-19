@@ -16,7 +16,7 @@ const edit={kind:"EDIT_MARK" as const,classId:uuid,termId:uuid,subjectId:uuid,
 test("Unicode names are allowed, whitespace is trimmed, forged fields and bad IDs are rejected",()=>{
   const valid=submitIrregularitySchema.safeParse({...base,fullName:"  Amina Ọlá  "});
   assert.equal(valid.success,true);
-  if(valid.success)assert.equal(valid.data.fullName,"Amina Ọlá");
+  if(valid.success&&valid.data.kind==="ADD_STUDENT")assert.equal(valid.data.fullName,"Amina Ọlá");
   for(const fullName of ["","X","Test <script>","Jane\nDoe","🙂🙂"])
     assert.equal(submitIrregularitySchema.safeParse({...base,fullName}).success,false,fullName);
   for(const admissionNumber of ["","  ","#?","HH@/2026","HH\nB"])
