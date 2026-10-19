@@ -279,7 +279,7 @@ export default function TeacherIrregularitiesPage(){
             <strong>Sent to:</strong> {cls?.isClassTeacher?"School administrator":cls?.classTeacherName??"Unassigned"} ·
             {" "}{selectedTerm?.sessionName??""} {selectedTerm?.name??""}
             {cls?.classTeacherId===data?.currentUserId&&
-              <span className="block text-xs">Class teacher: {cls.classTeacherName}. Your request skips self-approval and goes to the school administrator.</span>}
+              <span className="block text-xs">Class teacher: {cls?.classTeacherName??"Class teacher"}. Your request skips self-approval and goes to the school administrator.</span>}
           </p>
           {!cls?.classTeacherReady&&<p className="flex items-center gap-2 text-sm text-amber-800">
             <AlertTriangle className="h-4 w-4"/> Contact administration to assign exactly one class teacher.</p>}
