@@ -261,14 +261,14 @@ export default function TeacherIrregularitiesPage(){
         <form className="grid gap-4" onSubmit={submit} noValidate>
           <div className="grid gap-3 sm:grid-cols-2">
             <label className="text-sm font-medium">Class
-              <select className="mt-1 w-full rounded-xl border p-3" value={classId}
+              <select required aria-invalid={!!fieldErrors.classId} className="mt-1 w-full rounded-xl border p-3" value={classId}
                 onChange={e=>{setClassId(e.target.value);setSubjectId("");setStudentId("");setFieldErrors({});}}>
                 {data?.classes.map(c=><option key={c.id} value={c.id}>{c.name}</option>)}
               </select>
               {fieldError("classId")}
             </label>
             <label className="text-sm font-medium">Academic term
-              <select className="mt-1 w-full rounded-xl border p-3" value={termId}
+              <select required aria-invalid={!!fieldErrors.termId} className="mt-1 w-full rounded-xl border p-3" value={termId}
                 onChange={e=>{setTermId(e.target.value);clearField("termId");}}>
                 {data?.terms.map(t=><option key={t.id} value={t.id}>{t.sessionName} · {t.name}</option>)}
               </select>
@@ -316,7 +316,7 @@ export default function TeacherIrregularitiesPage(){
               </label>
               <label className="text-sm font-medium">{cls?.isClassTeacher?"Subject in my class":"My assigned subject"}
                 <select required className="mt-1 w-full rounded-xl border p-3"
-                  value={chosenSubject} onChange={e=>{setSubjectId(e.target.value);clearField("subjectId");}}
+                  value={chosenSubject} onChange={e=>{setSubjectId(e.target.value);setCa("");setExam("");setFieldErrors(v=>({...v,subjectId:"",ca:"",exam:""}));}}
                   aria-invalid={!!fieldErrors.subjectId}>
                   <option value="">Choose a subject</option>
                   {subjects.map(s=><option key={s.subjectId} value={s.subjectId}>{s.name} ({s.code})</option>)}
@@ -326,13 +326,13 @@ export default function TeacherIrregularitiesPage(){
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <label className="text-sm font-medium">Proposed CA score {selectedSubject?"(maximum "+selectedSubject.caMax+")":""}
-                <input type="number" required min={0} max={100} step="0.01"
+                <input type="number" required min={0} max={selectedSubject?.caMax??100} step="0.01"
                   className="mt-1 w-full rounded-xl border p-3" value={ca} onChange={e=>{setCa(e.target.value);clearField("ca");}}
                   aria-invalid={!!fieldErrors.ca}/> 
                 {fieldError("ca")}
               </label>
               <label className="text-sm font-medium">Proposed exam score {selectedSubject?"(maximum "+selectedSubject.examMax+")":""}
-                <input type="number" required min={0} max={100} step=".5"
+                <input type="number" required min={0} max={selectedSubject?.examMax??100} step="0.01"
                   className="mt-1 w-full rounded-xl border p-3" value={exam} onChange={e=>{setExam(e.target.value);clearField("exam");}}
                   aria-invalid={!!fieldErrors.exam}/> 
                 {fieldError("exam")}
