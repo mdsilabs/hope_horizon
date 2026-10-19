@@ -36,7 +36,7 @@ test("Self request never routes back to the class teacher for self approval",()=
   assert.match(ui,/cls!\.isClassTeacher\?"school administrator":cls!\.classTeacherName/);
   assert.match(ui,/cls\?\.isClassTeacher\?"School administrator"/);
   assert.match(ui,/cls\?\.isClassTeacher\?"administrator"/);
-  assert.match(ui,/Class teacher: \{cls\.classTeacherName\}/);
+  assert.match(ui,/Class teacher: \{cls\?\.classTeacherName/);
   assert.match(sql,/v_status:=CASE WHEN v_class_teacher=auth\.uid\(\)/);
   assert.match(classes,/\/teacher\/irregularities\?classId=/);
   assert.match(ui,/new URLSearchParams\(window\.location\.search\)/);
