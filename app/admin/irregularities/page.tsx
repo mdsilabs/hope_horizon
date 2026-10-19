@@ -7,6 +7,7 @@ import {Button} from "@/components/ui/Button";
 type Req={
   id:string;kind:"ADD_STUDENT"|"EDIT_MARK";
   status:string;className:string;requesterName:string;classTeacherName:string;
+  studentName:string;subjectName:string;termName:string;
   reason:string;payload:Record<string,unknown>;created_at:string;
   class_review_note:string|null;admin_decision_note:string|null;
 };
@@ -98,7 +99,7 @@ export default function AdministratorIrregularitiesPage(){
          <div className="flex flex-wrap items-start justify-between gap-3">
            <div>
              <p className="font-semibold text-slate-900">
-               {r.kind==="ADD_STUDENT"?"Add missing student":"Correct subject marks"} · {r.className}
+               {r.kind==="ADD_STUDENT"?"Add missing student":"Correct subject marks"} · {r.className} · {r.termName}
              </p>
              <p className="mt-1 text-xs text-slate-500">
                {new Date(r.created_at).toLocaleString("en-NG")} · Request {r.id}
@@ -118,8 +119,8 @@ export default function AdministratorIrregularitiesPage(){
              {" "}<strong>Admission no.:</strong> {String(r.payload.admissionNumber??"")}
            </p>:
            <p className="text-sm text-slate-700">
-             <strong>Proposed scores:</strong> CA {String(r.payload.ca??"")} · Exam {String(r.payload.exam??"")}
-             <span className="ml-2 text-xs text-slate-500">Check the linked student/subject identifiers in the request record before implementation.</span>
+             <strong>Student:</strong> {r.studentName} · <strong>Subject:</strong> {r.subjectName} ·
+             {" "}<strong>Proposed scores:</strong> CA {String(r.payload.ca??"")} · Exam {String(r.payload.exam??"")}
            </p>}
          <p className="rounded-lg bg-slate-50 p-3 text-sm text-slate-700"><strong>Reason:</strong> {r.reason}</p>
          {r.class_review_note&&<p className="text-sm text-slate-600">
