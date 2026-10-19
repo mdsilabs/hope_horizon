@@ -287,11 +287,11 @@ export default function TeacherIrregularitiesPage(){
             <select className="mt-1 w-full rounded-xl border p-3" value={kind}
               onChange={e=>{setKind(e.target.value as RequestKind);setFieldErrors({});}}>
               <option value="ADD_STUDENT">Add missing student</option>
-              <option value="EDIT_MARK">Correct student's subject marks</option>
+              <option value="EDIT_MARK">Correct student&apos;s subject marks</option>
             </select>
           </label>
           {kind==="ADD_STUDENT"?<div className="grid gap-3 sm:grid-cols-2">
-            <label className="text-sm font-medium">Student's full name
+            <label className="text-sm font-medium">Student&apos;s full name
               <input required minLength={2} maxLength={120} className="mt-1 w-full rounded-xl border p-3"
                 value={fullName} onChange={e=>{setFullName(e.target.value);clearField("fullName");}}
                 aria-invalid={!!fieldErrors.fullName}/>
