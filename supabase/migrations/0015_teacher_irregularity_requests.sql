@@ -110,7 +110,7 @@ BEGIN
     RAISE EXCEPTION 'Choose a class and term in your school' USING ERRCODE='22023';
   END IF;
 
-  SELECT count(*), min(t.user_id) INTO v_count,v_class_teacher
+  SELECT count(*), (array_agg(t.user_id ORDER BY t.user_id::text))[1] INTO v_count,v_class_teacher
   FROM public.teacher_classes tc
   JOIN public.teachers t ON t.id=tc.teacher_id
   JOIN public.users u ON u.id=t.user_id
