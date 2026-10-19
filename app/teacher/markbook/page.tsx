@@ -41,7 +41,14 @@ export default function SubjectMarkbookPage(){
     }catch(e){setError(e instanceof Error?e.message:"Could not open your subject markbook.");}
     finally{setLoading(false);}
   },[]);
-  useEffect(()=>{void load("");},[load]);
+  useEffect(()=>{
+    // "My classes" links to the exact class/subject assignment. The API
+    // still validates that the signed-in teacher owns both assignments.
+    const query=new URLSearchParams(window.location.search);
+    const classId=query.get("classId"),subjectId=query.get("subjectId");
+    if(classId&&subjectId)setSelection(classId+":"+subjectId);
+    else void load("");
+  },[load]);
   useEffect(()=>{if(selection)void load(selection);},[selection,load]);
   function update(id:string,kind:"ca"|"exam",value:string){
     setValues(previous=>({...previous,[id]:{...previous[id],[kind]:value}}));
