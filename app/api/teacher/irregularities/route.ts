@@ -16,7 +16,7 @@ export async function GET(){
     const [ownClassResult,subjectResult,termsResult,requestResult]=await Promise.all([
       db.from("teacher_classes").select("class_id").eq("teacher_id",teacher.id),
       db.from("teacher_subject_assignments")
-        .select("class_id,subject_id,subjects(name,code)").eq("teacher_id",teacher.id),
+        .select("class_id,subject_id,subjects(name,code,is_active,school_id,ca_max_score_override,exam_max_score_override)").eq("teacher_id",teacher.id),
       db.from("terms").select("id,name,academic_sessions(name)")
         .eq("school_id",schoolId).order("created_at",{ascending:false}).limit(50),
       db.from("hh_irregularity_requests").select("*")
@@ -32,7 +32,7 @@ export async function GET(){
     // function independently verifies their class-teacher role.
     const {data:allClassSubjects,error:classSubjectError}=ownClassIds.length
       ?await db.from("class_subjects")
-        .select("class_id,subject_id,subjects(id,name,code,is_active,school_id)")
+        .select("class_id,subject_id,subjects(id,name,code,is_active,school_id,ca_max_score_override,exam_max_score_override)")
         .in("class_id",ownClassIds)
       :{data:[],error:null};
     if(classSubjectError)throw new AppError("Could not load subjects assigned to your classes.",503);
@@ -45,7 +45,7 @@ export async function GET(){
       classIds.length?db.from("students")
         .select("id,class_id,full_name,admission_number").eq("school_id",schoolId)
         .eq("is_active",true).in("class_id",classIds).order("full_name").limit(3000):Promise.resolve({data:[],error:null}),
-      db.from("schools").select("current_term_id").eq("id",schoolId).single(),
+      db.from("schools").select("current_term_id,ca_max_score,exam_max_score").eq("id",schoolId).single(),
     ]);
     if(classesResult.error||staffResult.error||studentsResult.error||schoolResult.error)
       throw new AppError("Cannot load assigned class directory.",503);
@@ -84,13 +84,17 @@ export async function GET(){
         id:t.id,name:t.name,sessionName:t.academic_sessions?.name??"",
       })),students:studentsResult.data??[],
       subjects:Array.from(new Map([
-        ...subjectLinks.filter(s=>s.subjects)
+        ...subjectLinks.filter(s=>s.subjects?.is_active&&s.subjects?.school_id===schoolId)
           .map(s=>({classId:s.class_id,subjectId:s.subject_id,
-            name:s.subjects!.name,code:s.subjects!.code})),
+            name:s.subjects!.name,code:s.subjects!.code,
+            caMax:s.subjects!.ca_max_score_override??schoolResult.data!.ca_max_score,
+            examMax:s.subjects!.exam_max_score_override??schoolResult.data!.exam_max_score})),
         ...(allClassSubjects??[])
           .filter(s=>s.subjects?.is_active&&s.subjects?.school_id===schoolId)
           .map(s=>({classId:s.class_id,subjectId:s.subject_id,
-            name:s.subjects!.name,code:s.subjects!.code})),
+            name:s.subjects!.name,code:s.subjects!.code,
+            caMax:s.subjects!.ca_max_score_override??schoolResult.data!.ca_max_score,
+            examMax:s.subjects!.exam_max_score_override??schoolResult.data!.exam_max_score})),
       ].map(s=>[s.classId+":"+s.subjectId,s] as const)).values()),
       requests:requests.map(r=>({
         ...r,classTeacherName:names[r.class_teacher_id]??"Class teacher",
