@@ -40,6 +40,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "Class Approvals", href: "/admin/class-approvals", icon: FileCheck2 },
     { label: "Class Publication", href: "/admin/class-releases", icon: ClipboardCheck },
     { label: "Results", href: "/admin/results", icon: ClipboardCheck },
+    { label: "Class Requests", href: "/admin/irregularities", icon: ClipboardCheck },
     { label: "Notifications", href: "/admin/notifications", icon: Bell },
     { label: "Settings", href: "/admin/settings", icon: Settings },
   ],
@@ -63,6 +64,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "Subject Markbook", href: "/teacher/markbook", icon: BookOpen },
     { label: "Class Compilation", href: "/teacher/compilation", icon: ClipboardCheck },
     { label: "Previous Results", href: "/teacher/results", icon: ClipboardCheck },
+    { label: "Class Requests", href: "/teacher/irregularities", icon: ClipboardCheck },
     { label: "Notifications", href: "/teacher/notifications", icon: Bell },
   ],
   STUDENT: [
