@@ -33,7 +33,7 @@ test("Class teachers can propose marks for any attached active class subject",()
   assert.match(api,/subjects:Array\.from\(new Map/);
 });
 test("Self request never routes back to the class teacher for self approval",()=>{
-  assert.match(ui,/cls\.isClassTeacher\?"school administrator":cls\.classTeacherName/);
+  assert.match(ui,/cls!\.isClassTeacher\?"school administrator":cls!\.classTeacherName/);
   assert.match(ui,/cls\?\.isClassTeacher\?"School administrator"/);
   assert.match(ui,/cls\?\.isClassTeacher\?"administrator"/);
   assert.match(ui,/Class teacher: \{cls\.classTeacherName\}/);
