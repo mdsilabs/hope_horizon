@@ -184,12 +184,18 @@ export default async function TeacherClassesPage() {
                   )}
                 </div>
 
-                {classTeacher&&(
-                  <Link href={`/teacher/compilation/${encodeURIComponent(classroom.id)}`}
-                    className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">
-                    <ClipboardCheck className="h-4 w-4"/> Review class results
+                <div className="flex flex-wrap items-center gap-3">
+                  {classTeacher&&(
+                    <Link href={`/teacher/compilation/${encodeURIComponent(classroom.id)}`}
+                      className="inline-flex items-center gap-2 rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-700">
+                      <ClipboardCheck className="h-4 w-4"/> Review class results
+                    </Link>
+                  )}
+                  <Link href={`/teacher/irregularities?classId=${encodeURIComponent(classroom.id)}`}
+                    className="inline-flex items-center gap-2 rounded-xl border border-amber-300 bg-amber-50 px-4 py-2.5 text-sm font-semibold text-amber-900 hover:bg-amber-100">
+                    Request student/mark correction
                   </Link>
-                )}
+                </div>
               </Card>
             ))}
           </div>
