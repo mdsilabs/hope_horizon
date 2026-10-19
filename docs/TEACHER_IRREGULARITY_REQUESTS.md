@@ -11,7 +11,10 @@ is not the same as implementation.
 1. Commit the code to the Hope Horizon repository (already tracked).
 2. After applying migrations 0001-0014, execute
    `supabase/migrations/0015_teacher_irregularity_requests.sql`
-   **once** in the correct Supabase project's SQL Editor.
+   **once** in the correct Supabase project's SQL Editor, then apply
+   `supabase/migrations/0016_class_teacher_irregularity_requests.sql`
+   **once**. If 0015 is already applied, apply only 0016. Do not rerun
+   CREATE TABLE migrations on a database where the tables already exist.
 3. Redeploy the latest `main` branch to Vercel.
 4. Confirm the assigned class teacher for every class under Admin → Teachers.
    There must be **exactly one active class teacher** for routing. If none or
@@ -32,6 +35,24 @@ is not the same as implementation.
    comment, and administrator's decision. All events remain in the timeline.
 7. A teacher cannot directly overwrite a locked markbook or published
    result using this process.
+
+## Class teacher as requester (0016)
+- A class teacher can submit the same **add missing student** request for
+  their assigned class, even without a subject-teacher assignment.
+- A class teacher can request a correction for **any active subject attached
+  to their class**, even if a different teacher teaches that subject. This is
+  request-only access, not permission to edit subject marks directly.
+- Select **My Classes → Request student/mark correction** to preselect the
+  class, or use **Class Requests** from the sidebar.
+- The destination is shown as **School administrator**, not their own name,
+  so the class teacher cannot endorse their own request. The database routes
+  their requests directly to the independent school administrator.
+- Subject teachers still see the named class teacher as the initial
+  recipient and are limited to their own assigned subjects.
+- Class teachers can track their own request status and review other
+  teachers' requests through the same page.
+- When previously installed 0015 is extended, use migration **0016**, which
+  only replaces the authorized request RPC and does not rewrite any result.
 
 ## Class-teacher review
 - In the same **Class Requests** page, the designated class teacher sees
