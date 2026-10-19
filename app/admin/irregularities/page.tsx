@@ -4,6 +4,7 @@ import Link from "next/link";
 import {ClipboardList,RefreshCw,ShieldCheck} from "lucide-react";
 import {Card} from "@/components/ui/Card";
 import {Button} from "@/components/ui/Button";
+import {adminIrregularityDecisionSchema} from "@/lib/validations/irregularities";
 type Req={
   id:string;kind:"ADD_STUDENT"|"EDIT_MARK";
   status:string;className:string;requesterName:string;classTeacherName:string;
@@ -25,6 +26,7 @@ export default function AdministratorIrregularitiesPage(){
  const [rows,setRows]=useState<Req[]>([]),[loading,setLoading]=useState(true),[busy,setBusy]=useState("");
  const [error,setError]=useState(""),[notice,setNotice]=useState("");
  const [notes,setNotes]=useState<Record<string,string>>({});
+ const [decisionErrors,setDecisionErrors]=useState<Record<string,string>>({});
  const [show,setShow]=useState("pending");
  const load=useCallback(async()=>{
    setLoading(true);
@@ -39,7 +41,12 @@ export default function AdministratorIrregularitiesPage(){
  useEffect(()=>{void load();},[load]);
  async function decide(r:Req,action:"APPROVE"|"REJECT"){
    const note=(notes[r.id]??"").trim();
-   if(action==="REJECT"&&note.length<10){setError("Explain why the request is rejected in at least ten characters.");return;}
+   const checked=adminIrregularityDecisionSchema.safeParse({action,note});
+   if(!checked.success){
+     setDecisionErrors(s=>({...s,[r.id]:checked.error.issues[0]?.message??"Invalid decision note."}));
+     return;
+   }
+   setDecisionErrors(s=>({...s,[r.id]:""}));
    const warning=action==="APPROVE"
      ?"Approve this request for authorized application? This will NOT change published marks or enroll a student automatically."
      :"Reject this request and notify the teachers?";
@@ -47,7 +54,7 @@ export default function AdministratorIrregularitiesPage(){
    setBusy(r.id);setError("");setNotice("");
    try{
      const response=await fetch("/api/admin/irregularities/"+r.id+"/decision",{
-       method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({action,note}),
+       method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(checked.data),
      });
      const body=await response.json();
      if(!response.ok)throw new Error(msg(body));
@@ -132,9 +139,14 @@ export default function AdministratorIrregularitiesPage(){
          {r.status==="PENDING_ADMIN"&&<div className="space-y-2 border-t pt-3">
            <label className="block text-sm font-medium" htmlFor={"note-"+r.id}>Decision notes</label>
            <textarea id={"note-"+r.id} rows={2} maxLength={1000}
-             value={notes[r.id]??""} onChange={e=>setNotes(s=>({...s,[r.id]:e.target.value}))}
-             className="w-full rounded-xl border border-slate-300 p-3 text-sm"
+             value={notes[r.id]??""}
+             aria-invalid={!!decisionErrors[r.id]}
+             onChange={e=>{setNotes(s=>({...s,[r.id]:e.target.value}));
+               setDecisionErrors(s=>({...s,[r.id]:""}));}}
+             className={"w-full rounded-xl border p-3 text-sm "+(decisionErrors[r.id]?"border-red-500":"border-slate-300")}
              placeholder="Reason for decision; explain if corrections or evidence are required"/>
+           {decisionErrors[r.id]&&<p role="alert" className="text-xs text-red-700">{decisionErrors[r.id]}</p>}
+           <p className="text-xs text-slate-500">{(notes[r.id]??"").trim().length}/1,000 characters; rejection requires at least 10.</p>
            <div className="flex flex-wrap gap-2">
              <Button disabled={!!busy} onClick={()=>void decide(r,"APPROVE")}>
                <ShieldCheck className="h-4 w-4"/> Approve for controlled action
