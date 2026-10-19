@@ -8,7 +8,7 @@ import {Button} from "@/components/ui/Button";
 type RequestKind="ADD_STUDENT"|"EDIT_MARK";
 type Status="PENDING_CLASS_TEACHER"|"PENDING_ADMIN"|"APPROVED_PENDING_APPLICATION"|
   "REJECTED_CLASS_TEACHER"|"REJECTED_ADMIN";
-type ClassItem={id:string;name:string;classTeacherName:string;classTeacherId:string|null;classTeacherReady:boolean};
+type ClassItem={id:string;name:string;classTeacherName:string;classTeacherId:string|null;classTeacherReady:boolean;isClassTeacher:boolean};
 type Term={id:string;name:string;sessionName:string};
 type Student={id:string;class_id:string;full_name:string;admission_number:string};
 type Subject={classId:string;subjectId:string;name:string;code:string};
@@ -50,7 +50,11 @@ export default function TeacherIrregularitiesPage(){
       if(!response.ok)throw new Error(getError(json));
       const next=json as Response;
       setData(next);
-      setClassId(v=>next.classes.some(c=>c.id===v)?v:next.classes[0]?.id??"");
+      setClassId(v=>{
+        if(next.classes.some(c=>c.id===v))return v;
+        const preferred=new URLSearchParams(window.location.search).get("classId");
+        return next.classes.find(c=>c.id===preferred)?.id??next.classes[0]?.id??"";
+      });
       setTermId(v=>next.terms.some(t=>t.id===v)?v:
         next.terms.find(t=>t.id===next.currentTermId)?.id??next.terms[0]?.id??"");
       setError("");
@@ -66,8 +70,9 @@ export default function TeacherIrregularitiesPage(){
   async function submit(e:FormEvent<HTMLFormElement>){
     e.preventDefault();setError("");setNotice("");
     if(!cls?.classTeacherReady){setError("Ask the administrator to assign exactly one active class teacher first.");return;}
-    if(kind==="EDIT_MARK"&&(!chosenSubject||!chosenStudent)){setError("Choose a student and a subject assigned to you.");return;}
-    if(!window.confirm("Send this request to "+cls.classTeacherName+"? Published results will remain unchanged."))return;
+    if(kind==="EDIT_MARK"&&(!chosenSubject||!chosenStudent)){setError("Choose a student and an authorized class subject.");return;}
+    const destination=cls.isClassTeacher?"school administrator":cls.classTeacherName;
+    if(!window.confirm("Send this request to "+destination+"? Published results will remain unchanged."))return;
     setBusy("submit");
     try{
       const payload=kind==="ADD_STUDENT"?
@@ -188,7 +193,9 @@ export default function TeacherIrregularitiesPage(){
         <div>
           <h2 className="font-semibold text-slate-900">Submit a request</h2>
           <p className="mt-1 text-sm text-slate-600">
-            Your class teacher reviews it first. The school administrator makes the final decision.
+            Subject teachers send requests to the assigned class teacher. Class teachers can also report
+            missing students or incorrect scores in any class subject; their own requests go straight to
+            the administrator for independent review.
           </p>
         </div>
         {!allAssigned?<p className="text-sm text-amber-800">You have no assigned classes. Ask an administrator to assign you a class or subject.</p>:
@@ -208,10 +215,10 @@ export default function TeacherIrregularitiesPage(){
             </label>
           </div>
           <p className="rounded-xl bg-brand-50 p-3 text-sm text-brand-900">
-            <strong>Sent to:</strong> {cls?.classTeacherName??"Unassigned"} ·
+            <strong>Sent to:</strong> {cls?.isClassTeacher?"School administrator":cls?.classTeacherName??"Unassigned"} ·
             {" "}{selectedTerm?.sessionName??""} {selectedTerm?.name??""}
             {cls?.classTeacherId===data?.currentUserId&&
-              <span className="block text-xs">As the class teacher, your own requests go directly to independent administrator review.</span>}
+              <span className="block text-xs">Class teacher: {cls.classTeacherName}. Your request skips self-approval and goes to the school administrator.</span>}
           </p>
           {!cls?.classTeacherReady&&<p className="flex items-center gap-2 text-sm text-amber-800">
             <AlertTriangle className="h-4 w-4"/> Contact administration to assign exactly one class teacher.</p>}
@@ -239,7 +246,7 @@ export default function TeacherIrregularitiesPage(){
                   {students.map(s=><option key={s.id} value={s.id}>{s.full_name} · {s.admission_number}</option>)}
                 </select>
               </label>
-              <label className="text-sm font-medium">Your assigned subject
+              <label className="text-sm font-medium">{cls?.isClassTeacher?"Subject in my class":"My assigned subject"}
                 <select required className="mt-1 w-full rounded-xl border p-3"
                   value={chosenSubject} onChange={e=>setSubjectId(e.target.value)}>
                   {subjects.map(s=><option key={s.subjectId} value={s.subjectId}>{s.name} ({s.code})</option>)}
@@ -264,7 +271,7 @@ export default function TeacherIrregularitiesPage(){
               onChange={e=>setReason(e.target.value)}/>
           </label>
           <Button type="submit" disabled={!!busy||loading||!cls?.classTeacherReady||!termId}>
-            <Send className="h-4 w-4"/> Submit to {cls?.classTeacherName??"class teacher"}
+            <Send className="h-4 w-4"/> Submit to {cls?.isClassTeacher?"administrator":cls?.classTeacherName??"class teacher"}
           </Button>
         </form>}
       </Card>}
