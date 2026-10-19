@@ -13,8 +13,10 @@ is not the same as implementation.
    `supabase/migrations/0015_teacher_irregularity_requests.sql`
    **once** in the correct Supabase project's SQL Editor, then apply
    `supabase/migrations/0016_class_teacher_irregularity_requests.sql`
-   **once**. If 0015 is already applied, apply only 0016. Do not rerun
-   CREATE TABLE migrations on a database where the tables already exist.
+   **once**, followed by
+   `supabase/migrations/0017_irregularity_input_validation.sql`
+   **once**. If 0015/0016 are already applied, apply only 0017.
+   Do not rerun CREATE TABLE migrations on a database where the tables already exist.
 3. Redeploy the latest `main` branch to Vercel.
 4. Confirm the assigned class teacher for every class under Admin → Teachers.
    There must be **exactly one active class teacher** for routing. If none or
@@ -112,3 +114,36 @@ manually bypass locked-result triggers or alter published results with SQL.
 - Admin can approve or reject, with a recorded actor/timestamp and event history.
 - Student/parent accounts cannot read teacher irregularity requests.
 - Results remain published and unchanged even after admin request approval.
+
+## Form and input validation (0017)
+
+Teachers and class teachers receive inline field-specific validation. Every
+error is also checked by the Next.js API and the Postgres request RPC.
+Required information and rules:
+
+- Assigned class (one active designated class teacher for routing) and an
+  existing school academic term.
+- Request type must be exactly **Add missing student** or **Correct subject marks**.
+- Student name: 2–120 characters, Unicode letters, spaces, periods,
+  apostrophes and hyphens. Admission number: 2–50 characters, school-safe
+  letters/numbers and basic punctuation. If the admission number is already
+  assigned, the database rejects the request.
+- Mark corrections require an explicitly chosen **student** and **class
+  subject**. Neither is implicitly set to the first dropdown entry.
+- CA and exam must be typed as numeric values with at most two decimal
+  places. An empty score is NOT zero. Negative values, scientific notation,
+  infinity, extra decimals and scores above the chosen subject's configured
+  CA/exam maximum are rejected.
+- A descriptive reason of 10–1,000 characters is mandatory.
+- Class teacher and administrator rejection notes must each contain at least
+  10 characters. Decision notes never exceed 1,000 characters. The form
+  displays character counts and inline errors.
+- Browser constraints are informational, not the security boundary. The API
+  validates the payload again and the database enforces class and
+  subject permissions, score ceilings, and identity character rules.
+- Changing the selected subject clears previously typed scores so they
+  cannot accidentally be evaluated against the wrong score configuration.
+
+Migration 0017 only replaces the validation-aware request RPC. It does not
+modify existing grades, submitted markbooks, approved/published results, or
+student records.
