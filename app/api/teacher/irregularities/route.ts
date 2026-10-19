@@ -91,7 +91,7 @@ export async function GET(){
           .filter(s=>s.subjects?.is_active&&s.subjects?.school_id===schoolId)
           .map(s=>({classId:s.class_id,subjectId:s.subject_id,
             name:s.subjects!.name,code:s.subjects!.code})),
-      ].map(s=>[s.classId+":"+s.subjectId,s])).values()),
+      ].map(s=>[s.classId+":"+s.subjectId,s] as const)).values()),
       requests:requests.map(r=>({
         ...r,classTeacherName:names[r.class_teacher_id]??"Class teacher",
         requesterName:names[r.requester_id]??"Teacher",
