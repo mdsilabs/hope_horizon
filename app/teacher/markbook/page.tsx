@@ -98,10 +98,16 @@ export default function SubjectMarkbookPage(){
           options={(data?.assignments||[]).map(a=>({value:a.classId+":"+a.subjectId,
             label:a.className+" | "+a.subjectName+" ("+a.subjectCode+")"}))}
           onChange={e=>setSelection(e.target.value)} placeholder="Select your assignment"/>
-        <Link href="/teacher/compilation"
-          className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-50">
-          Class compilation
-        </Link>
+        <div className="flex flex-wrap items-center gap-2">
+          <Link href="/teacher/compilation"
+            className="inline-flex items-center justify-center rounded-xl border border-slate-200 px-3 py-2.5 text-sm font-medium text-brand-700 hover:bg-brand-50">
+            Class compilation
+          </Link>
+          <Link href="/teacher/irregularities"
+            className="inline-flex items-center justify-center rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm font-medium text-amber-900 hover:bg-amber-100">
+            Request locked/published correction
+          </Link>
+        </div>
       </div>
       {!data?.termId?<p className="mt-4 text-sm text-amber-700">Ask the administrator to activate the current term.</p>:null}
       {data?.correction&&<p className="mt-3 rounded-xl bg-amber-50 p-3 text-sm text-amber-900">
