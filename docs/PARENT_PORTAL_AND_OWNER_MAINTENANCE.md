@@ -23,71 +23,118 @@ child set atomically.
 No parent may self-link an unverified student. School staff must verify
 guardianship before adding or removing a link.
 
-## Platform owner (vendor super-admin)
-There is deliberately **no** automatic equivalence between a school's
-PRIMARY administrator and the platform owner. Each school receives its own
-installation. An explicit **server-only** owner authorization connects the
-school instance to a privileged vendor-controlled Auth account:
+## Super Admin: original school administrator
 
-```env
-PLATFORM_SUPERADMIN_AUTH_USER_ID=<AUTH_USER_UUID>
-PLATFORM_INSTALLATION_SCHOOL_ID=<THIS_INSTALLATION_SCHOOL_UUID>
-```
+The first ADMIN created by the school's bootstrap wizard has
+`admin_tier='PRIMARY'`. This immutable designation (migration 0008) now
+**automatically identifies the Super Admin**; no owner UUID environment
+variable is required. Co-Admins have `admin_tier='CO_ADMIN'` and can never
+pause, resume, or reset the installation.
 
-Both IDs are configured privately under Vercel Production Environment
-Variables. Never put the owner identifier into NEXT_PUBLIC variables. The
-vendor owner must still be an **active ADMIN account in that school** with
-completed password setup. Without both settings, owner controls are not
-available to anyone. Deploy the migration before the updated middleware.
+Migration 0019 establishes a unique PRIMARY designation per school.
+If older records contain multiple PRIMARY administrators it fails closed:
+a DBA must investigate and resolve that legacy ambiguity before reset
+features can be activated. Do not guess the original admin or promote
+a Co-Admin.
 
-## Install pause controls
+## Deployment steps
 
-1. Back up/verify the database and read migration
-   `supabase/migrations/0018_installation_pause_controls.sql`.
-2. Execute migration 0018 *once* after 0017. It creates
-   `platform_installation_controls` with `paused=false` by default,
-   and installs the `hh_installation_pause_guard` trigger on the
-   existing public application tables.
-3. Configure the two owner environment variables above and redeploy
-   the latest main.
-4. Sign in as the configured owner. Admin sidebar → **Platform Owner**
-   (`/admin/platform-control`).
-5. To **Pause**: supply a public reason (10–350 characters), type
-   `PAUSE <school name>` exactly, then confirm. The API checks the
-   configured owner, origin and school. The maintenance switch persists
-   in PostgreSQL across Vercel deployments.
-6. While paused, end-user pages redirect to `/system-paused` and
-   Next.js APIs return 503. Auth routes and the owner dashboard remain
-   available so the owner can recover and resume. The database-level
-   trigger blocks all `authenticated`-JWT public table writes, including
-   writes via direct Supabase APIs or privileged RPCs. Database service
-   role and SQL Editor are deliberately available for emergency recovery.
-7. To **Resume**: return to Platform Owner and type
-   `RESUME <school name>`, then confirm.
+1. Back up and restore-test the Supabase database independently.
+2. Apply `0018_installation_pause_controls.sql` if not yet applied.
+3. Apply `0019_primary_admin_and_guarded_operational_reset.sql` **once**.
+   It does not delete operational data, change the pause status or trigger
+   cleanup when installed. It only adds security constraints and guarded RPCs.
+4. Deploy the latest `main` to Vercel.
+5. Sign in as the original PRIMARY Administrator and open
+   `/admin/platform-control`. This link is shown only to that user.
+6. To enable the destructive reset button, additionally set the
+   **server-only** environment variable `PLATFORM_ENABLE_OPERATIONAL_RESET=true`
+   in the installation's Vercel Production settings, then redeploy.
+   The reset remains disabled unless this explicit operator gate is active.
 
-### Full reset safety
+## Pause and resume
 
-The owner dashboard contains a **read-only reset impact preview** with
-record counts and a **locked** destructive action. It does NOT execute a
-full reset, delete Supabase Auth users, erase published results or remove
-backup/audit history. This is intentional until the owner decides whether
-`all data` means **school operational content only** or also includes
-school branding/configuration, authentication accounts, immutable audit
-history and the owner account.
+- A pause requires a reason and typing `PAUSE <school name>` exactly.
+- It blocks public portal pages, application API access and authenticated
+  school-data writes at the database layer. This includes direct Supabase
+  RPC writes from users. The owner login/control route and database recovery
+  remain available.
+- Resume requires typing `RESUME <school name>` exactly.
+- An incomplete operational reset prevents resuming the school. The owner
+  must complete the queued Auth deletion first.
 
-A future destructive action must additionally require a verified
-independently restorable backup, explicit school and installation scope,
-dual authorization, exact expected-row counts, an irreversible typed
-phrase, no active maintenance-write traffic, transactional verification
-and documented Supabase Auth and Storage cleanup. Do not expose a
-general-purpose TRUNCATE or service-role SQL input box over HTTP.
+## Reset **operational data only**
 
-### Recovery / limitations
-- If the UI cannot resume, a database operator with legitimate SQL Editor
-  access may set `paused=false` in the singleton maintenance table.
-  Do not disable row-level security or drop triggers as a workaround.
-- A maintenance pause blocks web portal views and authorized application
-  writes but cannot retroactively revoke downloaded reports, or stop
-  reading Supabase rows through an existing direct API token if RLS permits.
-- Future migrations adding public tables must apply the pause guard.
-- Existing users and school records are preserved at every stage.
+**Preserved:** the original PRIMARY administrator's account and credentials;
+the `schools` row (name, branding, contacts, grade configuration, academic
+structure); Cloudinary/media configuration; Supabase Auth/project keys;
+audit history; the maintenance switch; reset receipts.
+
+**Deleted:** classes, subjects, academic sessions and terms, teaching
+assignments, students, staff/teacher profiles, parents and parent-child links,
+non-Super-Admin application user profiles, marks, results and published
+report data, requests, release approvals, and school notifications.
+The active academic session and term pointers become NULL because the
+selected records no longer exist. The Super Admin can start fresh setup.
+
+**Not automatically deleted:** externally stored images in Cloudinary,
+Supabase Storage objects, external payment/finance providers and backup
+archives. A separate provider-scoped media cleanup must be handled after
+review. The reset does not delete other schools in a multi-school database.
+
+### How to initiate
+
+1. Use the Super Admin account, verify the current school, and pause it.
+2. Refresh the exact operational-row counts. Review the records listed.
+3. Verify that you hold an **independently restorable database backup**.
+   Enter its unique backup reference. The app stores your attestation, but
+   cannot independently prove the backup can be restored.
+4. Acknowledge that this destroys operational records and type:
+   `RESET OPERATIONAL DATA FOR <school name>`
+5. Submit **Reset operational school data**. Both Next.js and the database
+   independently verify the original Primary identity, active pause, school
+   ID, exact live row counts and confirmation phrase.
+6. The database performs all scoped deletes in **one transaction**; if a
+   constraint, table-layout change or count check fails it rolls back.
+7. A durable `platform_reset_jobs` record tracks Supabase Auth accounts
+   remaining for removal. Click **Continue account cleanup** for batches
+   (up to 12 accounts). If a user owns Storage objects or Auth deletion
+   fails, the school stays paused until recovery/retry.
+8. After the Auth cleanup reaches zero, type the explicit RESUME phrase to
+   reopen the school. The Super Admin can recreate classes/staff/accounts.
+
+**Two-phase warning:** Supabase Auth deletion and the SQL transaction are not
+atomic with each other. Do not resume the school until account cleanup reports
+completed. Old JWTs without a school profile should not be permitted access
+through normal application RLS, but a security review is still required
+before production reset use. This high-impact feature should be exercised
+first on a disposable staging installation with representative data.
+
+### Protection and recovery
+
+- All sensitive API routes authorize the **PRIMARY** account and require
+  same-origin requests; DB RPCs are granted to service role only.
+- The full reset function refuses any unknown future public tables to
+  avoid leaving an unrecognized dataset behind.
+- The Super Admin profile is protected by the existing identity guard, and
+  the database refuses reset unless there is exactly one active PRIMARY.
+- Audit logs are preserved, and user references to deleted accounts are
+  nulled where defined by existing schema.
+- A failed database cleanup raises a PostgreSQL exception and rolls back.
+- If Auth cleanup gets stuck, investigate Auth/Storage dependencies and
+  retry; avoid manual deletion outside the recorded job without documenting.
+- The schema/reset functions do not remove the platform itself.
+- If the owner dashboard cannot resume, an authorized DBA may restore
+  `paused=false` in `platform_installation_controls` **only after confirming
+  no pending reset Auth cleanup**.
+
+### Acceptance testing (staging, before production)
+
+- PRIMARY can see owner link; CO_ADMIN, parents and teachers cannot.
+- Primary account stays active and retains the same login after reset.
+- All school settings and Cloudinary integration remain.
+- Counts become zero across all operational tables and other schools remain.
+- A count change after preview aborts; an unknown public table aborts.
+- Missing backup evidence or typed confirmation aborts.
+- No school can resume while Auth cleanup is incomplete.
+- Failed Auth deletions are retryable without re-erasing the database.
