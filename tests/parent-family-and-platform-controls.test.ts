@@ -53,7 +53,7 @@ test("Only immutable original PRIMARY admin has maintenance authority",()=>{
   assert.match(api,/await requirePlatformOwner\(\)/);
   assert.match(api,/origin!==new URL\(request\.url\)\.origin/);
   assert.match(api,/PAUSE|RESUME/);
-  assert.match(layout,/configuredPlatformOwner/);
+  assert.match(layout,/isVerifiedPlatformOwner/);
   assert.doesNotMatch(api.replace(/\/\/[^\n]*/g,""),/\.delete\(|\btruncate\b|\.rpc\("hh_platform_reset_operational"/i);
   assert.match(api,/destructiveResetAvailable:resetReady/);
   assert.match(api,/PLATFORM_ENABLE_OPERATIONAL_RESET/);
