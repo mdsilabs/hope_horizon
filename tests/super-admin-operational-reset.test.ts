@@ -10,6 +10,8 @@ const owner=read("lib/platform/owner.ts");
 test("Initial immutable PRIMARY administrator is Super Admin; co-admins denied",()=>{
  assert.match(owner,/session\.profile\.admin_tier==="PRIMARY"/);
  assert.match(owner,/session\.profile\.role==="ADMIN"/);
+ assert.match(owner,/count===1/);
+ assert.match(owner,/isVerifiedPlatformOwner/);
  assert.match(migration,/hh_one_primary_admin_per_school/);
  assert.match(migration,/HAVING count\(\*\)<>1/);
  assert.match(migration,/v_owner_count<>1/);
