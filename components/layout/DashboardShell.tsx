@@ -19,6 +19,7 @@ export function DashboardShell({
   role,
   schoolName,
   userName,
+  isPlatformOwner,
   unreadCount,
   onLogout,
   children,
@@ -26,13 +27,14 @@ export function DashboardShell({
   role: UserRole;
   schoolName: string;
   userName: string;
+  isPlatformOwner?: boolean;
   unreadCount?: number;
   onLogout?: () => void;
   children: React.ReactNode;
 }) {
   return (
     <div className="flex min-h-screen">
-      <Sidebar role={role} schoolName={schoolName} />
+      <Sidebar role={role} schoolName={schoolName} isPlatformOwner={isPlatformOwner}/>
       <div className="flex min-h-screen flex-1 flex-col">
         <Topbar
           userName={userName}
