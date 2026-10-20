@@ -91,7 +91,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
 export function Sidebar({ role, schoolName, isPlatformOwner }: { role: UserRole; schoolName: string; isPlatformOwner?: boolean }) {
   const pathname = usePathname();
   const items = isPlatformOwner&&role==="ADMIN"
-    ? [...NAV_BY_ROLE[role],{label:"Platform Owner",href:"/admin/platform-control",icon:Settings}]
+    ? [...NAV_BY_ROLE[role],{label:"Super Admin",href:"/admin/platform-control",icon:Settings}]
     : NAV_BY_ROLE[role];
 
   return (
