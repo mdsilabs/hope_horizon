@@ -88,9 +88,11 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
   OTHER: [{ label: "Dashboard", href: "/", icon: LayoutDashboard }],
 };
 
-export function Sidebar({ role, schoolName }: { role: UserRole; schoolName: string }) {
+export function Sidebar({ role, schoolName, isPlatformOwner }: { role: UserRole; schoolName: string; isPlatformOwner?: boolean }) {
   const pathname = usePathname();
-  const items = NAV_BY_ROLE[role];
+  const items = isPlatformOwner&&role==="ADMIN"
+    ? [...NAV_BY_ROLE[role],{label:"Platform Owner",href:"/admin/platform-control",icon:Settings}]
+    : NAV_BY_ROLE[role];
 
   return (
     <aside className="hidden w-64 shrink-0 border-r border-surface-border bg-white md:flex md:flex-col">
