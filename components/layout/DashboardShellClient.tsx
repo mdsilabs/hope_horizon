@@ -8,11 +8,13 @@ export function DashboardShellClient({
   role,
   schoolName,
   userName,
+  isPlatformOwner,
   children,
 }: {
   role: UserRole;
   schoolName: string;
   userName: string;
+  isPlatformOwner?: boolean;
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -24,7 +26,7 @@ export function DashboardShellClient({
   }
 
   return (
-    <DashboardShell role={role} schoolName={schoolName} userName={userName} onLogout={handleLogout}>
+    <DashboardShell role={role} schoolName={schoolName} userName={userName} isPlatformOwner={isPlatformOwner} onLogout={handleLogout}>
       {children}
     </DashboardShell>
   );
