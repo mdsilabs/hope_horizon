@@ -529,6 +529,21 @@ export interface Database {
           { foreignKeyName: "audit_logs_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
         ];
       };
+      platform_reset_jobs: {
+        Row:{id:string;school_id:string;primary_admin_id:string;
+          status:"AUTH_CLEANUP_PENDING"|"COMPLETED";pending_auth_ids:string[];
+          initial_account_count:number;verified_preview:Record<string,number>;
+          backup_reference:string;created_at:string;completed_at:string|null};
+        Insert:Partial<Database["public"]["Tables"]["platform_reset_jobs"]["Row"]> & {
+          school_id:string;primary_admin_id:string;
+          verified_preview:Record<string,number>;backup_reference:string;
+        };
+        Update:Partial<Database["public"]["Tables"]["platform_reset_jobs"]["Row"]>;
+        Relationships:[
+          {foreignKeyName:"platform_reset_jobs_school_id_fkey";columns:["school_id"];referencedRelation:"schools";referencedColumns:["id"]},
+          {foreignKeyName:"platform_reset_jobs_primary_admin_id_fkey";columns:["primary_admin_id"];referencedRelation:"users";referencedColumns:["id"]}
+        ];
+      };
       platform_installation_controls: {
         Row:{id:number;paused:boolean;notice:string;updated_at:string;updated_by:string|null};
         Insert:{id:number;paused?:boolean;notice?:string;updated_at?:string;updated_by?:string|null};
@@ -578,6 +593,10 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_platform_reset_counts:{Args:{p_school:string};Returns:Record<string,number>};
+      hh_platform_reset_operational:{Args:{p_school:string;p_actor:string;
+        p_expected:Record<string,number>;p_confirmation:string;p_backup_reference:string};Returns:string};
+      hh_platform_reset_auth_done:{Args:{p_job:string;p_user:string};Returns:{remaining:number}};
       hh_submit_irregularity:{
         Args:{p_kind:string;p_class_id:string;p_term_id:string;p_subject_id:string|null;
           p_student_id:string|null;p_payload:Record<string,unknown>;p_reason:string};Returns:string;
