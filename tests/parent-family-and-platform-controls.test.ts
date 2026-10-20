@@ -43,19 +43,20 @@ test("Parent notification mutation is own-recipient and tenant limited",()=>{
   assert.match(n,/\.eq\("channel","IN_APP"\)/);
   assert.match(n,/\.is\("read_at",null\)/);
 });
-test("Only independently configured vendor owner has maintenance authority",()=>{
+test("Only immutable original PRIMARY admin has maintenance authority",()=>{
   const owner=file("lib/platform/owner.ts");
   const api=file("app/api/admin/platform-control/route.ts");
   const layout=file("app/admin/platform-control/layout.tsx");
-  assert.match(owner,/PLATFORM_SUPERADMIN_AUTH_USER_ID/);
-  assert.match(owner,/PLATFORM_INSTALLATION_SCHOOL_ID/);
-  assert.match(owner,/session\.authUserId===id/);
+  assert.match(owner,/session\.profile\.admin_tier==="PRIMARY"/);
+  assert.match(owner,/session\.profile\.role==="ADMIN"/);
+  assert.doesNotMatch(owner,/PLATFORM_SUPERADMIN_AUTH_USER_ID/);
   assert.match(api,/await requirePlatformOwner\(\)/);
   assert.match(api,/origin!==new URL\(request\.url\)\.origin/);
   assert.match(api,/PAUSE|RESUME/);
   assert.match(layout,/configuredPlatformOwner/);
   assert.doesNotMatch(api.replace(/\/\/[^\n]*/g,""),/delete\(|truncate|\.rpc\(".*reset/i);
-  assert.match(api,/destructiveResetAvailable:false/);
+  assert.match(api,/destructiveResetAvailable:resetReady/);
+  assert.match(api,/PLATFORM_ENABLE_OPERATIONAL_RESET/);
 });
 test("Pause protects every user-facing page and API and all existing authenticated writes",()=>{
   const migration=file("supabase/migrations/0018_installation_pause_controls.sql");
