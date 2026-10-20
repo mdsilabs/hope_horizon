@@ -529,6 +529,13 @@ export interface Database {
           { foreignKeyName: "audit_logs_user_id_fkey"; columns: ["user_id"]; referencedRelation: "users"; referencedColumns: ["id"] },
         ];
       };
+      platform_installation_controls: {
+        Row:{id:number;paused:boolean;notice:string;updated_at:string;updated_by:string|null};
+        Insert:{id:number;paused?:boolean;notice?:string;updated_at?:string;updated_by?:string|null};
+        Update:Partial<Database["public"]["Tables"]["platform_installation_controls"]["Row"]>;
+        Relationships:[{foreignKeyName:"platform_installation_controls_updated_by_fkey";
+          columns:["updated_by"];referencedRelation:"users";referencedColumns:["id"]}];
+      };
       hh_irregularity_requests: {
         Row: {
           id:string;school_id:string;term_id:string;class_id:string;
