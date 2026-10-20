@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { getCurrentSession } from "@/lib/auth/getCurrentSession";
 import { createClient } from "@/lib/supabase/server";
 import { DashboardShellClient } from "@/components/layout/DashboardShellClient";
+import {configuredPlatformOwner} from "@/lib/platform/owner";
 
 export default async function RoleLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
@@ -20,6 +21,7 @@ export default async function RoleLayout({ children }: { children: React.ReactNo
       role={session.profile.role}
       schoolName={school?.name || "Hope Horizon Academy"}
       userName={session.profile.name}
+      isPlatformOwner={configuredPlatformOwner(session)}
     >
       {children}
     </DashboardShellClient>
