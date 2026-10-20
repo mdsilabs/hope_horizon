@@ -22,22 +22,29 @@ export async function GET(){
     if(control.error||!control.data)throw new AppError("Apply installation migration 0018 first.",503,"MIGRATION_REQUIRED");
     if(school.error||!school.data)throw new AppError("School unavailable.",503);
 
-    // Read-only counts for the owner to understand a potential full reset.
-    // This endpoint never issues DELETE, TRUNCATE or schema changes.
-    const tables=["students","teachers","parents","classes","subjects","terms",
-      "academic_sessions","results","notifications","users"] as const;
-    const counts:Record<string,number|null>={};
-    for(const table of tables){
-      const {count,error}=await admin.from(table)
-        .select("id",{head:true,count:"exact"})
-        .eq("school_id",session.profile.school_id);
-      counts[table]=error?null:count;
-    }
+    // Counts are computed in PostgreSQL against the same locked schema
+    // expected by the operational reset. Earlier deployments show the
+    // maintenance controls without enabling destructive actions.
+    const preview=await admin.rpc("hh_platform_reset_counts",{p_school:session.profile.school_id});
+    const resetReady=!preview.error && !!preview.data;
+    const counts:Record<string,number>=resetReady?preview.data as Record<string,number>:{};
+    const job=resetReady?await admin.from("platform_reset_jobs")
+      .select("id,status,created_at,initial_account_count,pending_auth_ids")
+      .eq("school_id",session.profile.school_id)
+      .order("created_at",{ascending:false}).limit(1).maybeSingle():null;
+    const latest=job?.data??null;
+    const pending=latest?.status==="AUTH_CLEANUP_PENDING";
     return NextResponse.json({
       paused:control.data.paused,notice:control.data.notice,updatedAt:control.data.updated_at,
       schoolName:school.data.name,counts,
-      destructiveResetAvailable:false,
-      resetWarning:"Preview only. Full reset needs separately approved scope and a verified restorable backup.",
+      resetReady,destructiveResetAvailable:resetReady &&
+        process.env.PLATFORM_ENABLE_OPERATIONAL_RESET==="true" &&
+        control.data.paused && !pending,
+      resetWarning:!resetReady?"Install guarded operational reset migration 0019 first.":
+        "Operational student/staff data can be erased permanently. Verify an independently restorable backup. School settings, audit history and the original PRIMARY admin remain.",
+      latestReset:latest?{id:latest.id,status:latest.status,
+        startedAt:latest.created_at,totalAuthAccounts:latest.initial_account_count,
+        pendingAuthAccounts:latest.pending_auth_ids.length}:null,
     },{headers:{"Cache-Control":"no-store, private"}});
   }catch(e){return handleApiError(e);}
 }
@@ -62,6 +69,16 @@ export async function POST(request:NextRequest){
       .select("id,paused").eq("id",1).single();
     if(controlError||!current)throw new AppError("Apply migration 0018 first.",503,"MIGRATION_REQUIRED");
     const desired=body.action==="PAUSE";
+    if(!desired){
+      const {data:unfinished,error:unfinishedError}=await admin.from("platform_reset_jobs")
+        .select("id").eq("school_id",session.profile.school_id)
+        .eq("status","AUTH_CLEANUP_PENDING").limit(1);
+      // Until 0019 is applied, the missing reset-job table is expected.
+      if(unfinishedError&&!["42P01","PGRST205"].includes(unfinishedError.code))
+        throw new AppError("Could not verify pending reset jobs. Do not resume.",503);
+      if(unfinished?.length)
+        throw new AppError("Finish deleting old sign-in accounts before resuming this school.",409);
+    }
     if(current.paused===desired)throw new AppError(
       desired?"The portal is already paused.":"The portal is already running.",409);
 
