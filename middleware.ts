@@ -23,7 +23,9 @@ export async function middleware(request: NextRequest) {
   ) || pathname.startsWith("/api/auth") || pathname.startsWith("/_next") || pathname.startsWith("/favicon");
   const firstSegment = pathname.split("/").filter(Boolean)[0] ?? "";
   const isProtectedSegment = PROTECTED_SEGMENTS.includes(firstSegment);
-  if (!isProtectedSegment || isPublic) return NextResponse.next();
+  // Static resources never require database or authorization checks.
+  if(pathname.startsWith("/_next/")||pathname.startsWith("/favicon")||
+    pathname.startsWith("/images/"))return NextResponse.next();
 
   let supabaseUrl: string;
   let supabaseAnonKey: string;
@@ -33,6 +35,7 @@ export async function middleware(request: NextRequest) {
     supabaseAnonKey = publicConfig.key;
   } catch (error) {
     console.error("Routing middleware Supabase project configuration error:", error);
+    if(isPublic)return NextResponse.next();
     return loginRedirect(request, pathname, "configuration");
   }
 
@@ -48,6 +51,34 @@ export async function middleware(request: NextRequest) {
         },
       },
     });
+
+    // This is a read-only, public singleton. For installation upgrades,
+    // missing-table errors are tolerated until migration 0018 is applied.
+    const {data:maintenance,error:maintenanceError}=await supabase
+      .from("platform_installation_controls").select("paused,notice").eq("id",1).maybeSingle();
+    const missingControl=maintenanceError &&
+      (["PGRST205","PGRST116","42P01"].includes(maintenanceError.code)||
+       /could not find the table/i.test(maintenanceError.message));
+    if(maintenanceError&&!missingControl){
+      console.error("Maintenance control lookup failed",maintenanceError.code);
+      return new NextResponse("School portal availability cannot be verified.",{status:503});
+    }
+    if(maintenance?.paused){
+      const isMaintenanceEntry=pathname==="/system-paused"||
+        pathname==="/admin/platform-control"||
+        pathname.startsWith("/api/admin/platform-control")||
+        pathname==="/login"||pathname==="/forgot-password"||
+        pathname==="/reset-password"||pathname==="/change-password"||
+        pathname.startsWith("/api/auth")||pathname==="/favicon.ico";
+      if(!isMaintenanceEntry){
+        if(pathname.startsWith("/api/")){
+          return NextResponse.json({error:{message:maintenance.notice||"Portal paused for maintenance."}},
+            {status:503,headers:{"Cache-Control":"no-store"}});
+        }
+        return NextResponse.redirect(new URL("/system-paused",request.url));
+      }
+    }
+    if(!isProtectedSegment||isPublic)return response;
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
     if (authError || !user) return loginRedirect(request, pathname);
