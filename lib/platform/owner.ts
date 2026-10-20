@@ -15,19 +15,20 @@ export function configuredPlatformOwner(session:CurrentSession):boolean{
     session.profile.is_active &&
     !session.profile.must_change_password;
 }
-export async function requirePlatformOwner(){
-  const session=await requireRole(["ADMIN"]);
-  if(!configuredPlatformOwner(session))
-    throw new AuthorizationError("Only the original Primary Administrator may control this installation.");
-  // Migration 0008 upgraded legacy ADMIN profiles to PRIMARY. Until the
-  // uniqueness migration is applied, fail closed if the school has more
-  // than one candidate instead of guessing which admin was first.
+export async function isVerifiedPlatformOwner(session:CurrentSession):Promise<boolean>{
+  if(!configuredPlatformOwner(session))return false;
+  // A school with legacy duplicate PRIMARY profiles has no trusted single
+  // Super Admin until migration 0019's uniqueness prerequisite is resolved.
   const db=await createClient();
   const {count,error}=await db.from("users")
     .select("id",{head:true,count:"exact"})
     .eq("school_id",session.profile.school_id)
     .eq("role","ADMIN").eq("admin_tier","PRIMARY");
-  if(error||count!==1)
-    throw new AuthorizationError("Unique Primary Administrator could not be verified; resolve legacy admin records.");
+  return !error&&count===1;
+}
+export async function requirePlatformOwner(){
+  const session=await requireRole(["ADMIN"]);
+  if(!await isVerifiedPlatformOwner(session))
+    throw new AuthorizationError("Only the uniquely verified original Primary Administrator may control this installation.");
   return session;
 }
