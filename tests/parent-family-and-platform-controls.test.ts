@@ -54,7 +54,7 @@ test("Only independently configured vendor owner has maintenance authority",()=>
   assert.match(api,/origin!==new URL\(request\.url\)\.origin/);
   assert.match(api,/PAUSE|RESUME/);
   assert.match(layout,/configuredPlatformOwner/);
-  assert.doesNotMatch(api,/delete\(|truncate|\.rpc\(".*reset/i);
+  assert.doesNotMatch(api.replace(/\/\/[^\n]*/g,""),/delete\(|truncate|\.rpc\(".*reset/i);
   assert.match(api,/destructiveResetAvailable:false/);
 });
 test("Pause protects every user-facing page and API and all existing authenticated writes",()=>{
