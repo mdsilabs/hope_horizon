@@ -1,62 +1,59 @@
-import { redirect } from "next/navigation";
-import { GraduationCap } from "lucide-react";
-import { createClient } from "@/lib/supabase/server";
-import { getCurrentSession } from "@/lib/auth/getCurrentSession";
-import { Card } from "@/components/ui/Card";
-import { EmptyState } from "@/components/ui/States";
+import Link from "next/link";
+import {GraduationCap,BookOpen,Bell,ArrowRight} from "lucide-react";
+import {loadParentFamily} from "@/lib/parent/family";
+import {createClient} from "@/lib/supabase/server";
+import {Card} from "@/components/ui/Card";
+import {EmptyState} from "@/components/ui/States";
 
-export default async function ParentDashboardPage() {
-  const session = await getCurrentSession();
-  if (!session) redirect("/login");
-
-  const supabase = await createClient();
-  const { data: parent } = await supabase
-    .from("parents")
-    .select("id")
-    .eq("user_id", session.authUserId)
-    .eq("school_id", session.profile.school_id)
-    .maybeSingle();
-
-  const children = parent
-    ? (
-        await supabase
-          .from("parent_students")
-          .select("students(id, full_name, admission_number)")
-          .eq("parent_id", parent.id)
-      ).data?.map((row) => (row as unknown as { students: { id: string; full_name: string; admission_number: string } }).students) ?? []
-    : [];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="font-display text-2xl font-semibold text-slate-900">
-          Welcome, {session.profile.name.split(" ")[0]}
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Track your {children.length === 1 ? "child's" : "children's"} academic progress here.
-        </p>
-      </div>
-
-      {children.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {children.map((child) => (
-            <Card key={child.id} className="flex items-center gap-3">
-              <div className="rounded-xl bg-brand-50 p-3 text-brand-600">
-                <GraduationCap className="h-5 w-5" />
-              </div>
-              <div>
-                <p className="font-medium text-slate-900">{child.full_name}</p>
-                <p className="text-sm text-slate-500">Admission No: {child.admission_number}</p>
-              </div>
-            </Card>
-          ))}
-        </div>
-      ) : (
-        <EmptyState
-          title="No children linked to your account"
-          description="Ask your school administrator to link your account to your child/children's student records."
-        />
-      )}
+export default async function ParentDashboardPage(){
+  const family=await loadParentFamily();
+  const db=await createClient();
+  const ids=family.children.map(c=>c.id);
+  const [published,unread]=await Promise.all([
+    ids.length?db.from("results")
+      .select("id",{head:true,count:"exact"}).eq("school_id",family.schoolId)
+      .eq("status","PUBLISHED").in("student_id",ids)
+      :Promise.resolve({count:0,error:null}),
+    db.from("notifications").select("id",{head:true,count:"exact"})
+      .eq("recipient_id",family.userId).eq("school_id",family.schoolId)
+      .eq("channel","IN_APP").is("read_at",null),
+  ]);
+  return <div className="mx-auto max-w-6xl space-y-6">
+    <div>
+      <h1 className="font-display text-2xl font-semibold text-slate-900">
+        Welcome, {family.parentName.split(" ")[0]}
+      </h1>
+      <p className="mt-1 text-sm text-slate-600">Follow all your children from a single secure family account.</p>
     </div>
-  );
+    <div className="grid gap-4 sm:grid-cols-3">
+      <Card><div className="flex items-center gap-2 text-sm text-slate-500"><GraduationCap className="h-4 w-4"/> Children</div>
+        <p className="mt-2 text-3xl font-semibold">{family.children.length}</p></Card>
+      <Card><div className="flex items-center gap-2 text-sm text-slate-500"><BookOpen className="h-4 w-4"/> Published results</div>
+        <p className="mt-2 text-3xl font-semibold">{published.error?"—":published.count??0}</p></Card>
+      <Card><div className="flex items-center gap-2 text-sm text-slate-500"><Bell className="h-4 w-4"/> Unread notifications</div>
+        <p className="mt-2 text-3xl font-semibold">{unread.error?"—":unread.count??0}</p></Card>
+    </div>
+    <div className="flex flex-wrap gap-3">
+      <Link href="/parent/children" className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
+        My children <ArrowRight className="h-4 w-4"/>
+      </Link>
+      <Link href="/parent/results" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+        Published results
+      </Link>
+    </div>
+    {!family.children.length?<EmptyState
+      title="No children linked"
+      description="Contact the school's administrator to link your children's records to this parent account."/>:
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        {family.children.map(child=><Card key={child.id} className="space-y-2">
+          <h2 className="font-semibold text-slate-900">{child.full_name}</h2>
+          <p className="text-sm text-slate-600">{child.classes?.name??"Class"} {child.classes?.arm??""}</p>
+          <p className="text-xs text-slate-500">Admission: {child.admission_number}</p>
+          <Link href={`/parent/results?childId=${encodeURIComponent(child.id)}`}
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+            View published results <ArrowRight className="h-4 w-4"/>
+          </Link>
+        </Card>)}
+      </div>}
+  </div>;
 }
