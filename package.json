@@ -29,7 +29,8 @@
     "qrcode": "^1.5.4",
     "nanoid": "^5.0.7",
     "server-only": "^0.0.1",
-    "nodemailer": "^10.0.13"
+    "nodemailer": "^10.0.13",
+    "pg": "^8.13.3"
   },
   "devDependencies": {
     "typescript": "^5.5.0",
@@ -43,7 +44,8 @@
     "eslint": "^8.57.0",
     "eslint-config-next": "15.5.26",
     "tsx": "^4.16.2",
-    "dotenv": "^16.4.5"
+    "dotenv": "^16.4.5",
+    "@types/pg": "^8.11.10"
   },
   "allowScripts": {
     "unrs-resolver@1.12.2": true,
