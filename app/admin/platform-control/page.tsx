@@ -68,7 +68,7 @@ export default function PlatformControlPage(){
       !backupConfirmed||!permanentConfirmed){
       setError("Confirm the backup, the permanent data loss and the exact school reset phrase.");return;
     }
-    if(!window.confirm("Permanently erase ALL operational school data, including student records, grades and staff logins? This cannot be undone without the verified backup."))return;
+    if(!window.confirm("Permanently erase ALL operational school data, including student records, grades and non-admin staff logins? All administrator accounts remain protected. This cannot be undone without the verified backup."))return;
     setBusy(true);setError("");setMessage("");
     try{
       const response=await fetch("/api/admin/platform-control/reset",{
@@ -155,9 +155,9 @@ export default function PlatformControlPage(){
           <div>
             <h2 className="text-lg font-semibold">Reset operational school data</h2>
             <p className="mt-1 text-sm text-slate-600">
-              Delete student and parent records, other user accounts, teachers,
+              Delete student and parent records, non-admin user accounts, teachers,
               academic sessions, classes, subjects, marks, results, submissions and school notifications.
-              The original Super Admin, school identity, branding, settings and audit history remain.
+              Every administrator (PRIMARY and CO_ADMIN), school identity, branding, settings and audit history remain.
             </p>
           </div>
         </div>
@@ -204,7 +204,7 @@ export default function PlatformControlPage(){
             <label className="flex items-start gap-2 text-sm">
               <input type="checkbox" className="mt-1" checked={permanentConfirmed}
                 onChange={e=>setPermanentConfirmed(e.target.checked)}/>
-              I understand that all operational school records and other user accounts will be permanently erased.
+              I understand that operational records and all non-admin accounts will be permanently erased. PRIMARY and CO_ADMIN accounts will be preserved.
             </label>
             <label className="block text-sm font-medium">
               Type exactly: <span className="font-mono">{phrase}</span>
@@ -218,7 +218,7 @@ export default function PlatformControlPage(){
               <AlertTriangle className="h-4 w-4"/> Reset operational school data
             </Button>
             {!control.paused&&<p className="text-xs text-red-700">Pause the portal before activating reset.</p>}
-            {!control.resetReady&&<p className="text-xs text-red-700">Apply migration 0019 to enable the guarded reset.</p>}
+            {!control.resetReady&&<p className="text-xs text-red-700">Apply migrations 0019 and 0020 to enable the guarded all-admin-preserving reset.</p>}
           </div>
         </>}
         <div className="flex flex-wrap gap-3">
@@ -227,7 +227,7 @@ export default function PlatformControlPage(){
           </Button>
         </div>
         <p className="flex items-center gap-2 text-xs text-slate-500">
-          <ShieldCheck className="h-4 w-4"/> Resets affect only this school. The Super Admin and school configuration are protected.
+          <ShieldCheck className="h-4 w-4"/> Resets affect only this school. All ADMIN accounts, including Co-Admins, and school configuration are protected.
         </p>
       </Card>
     </>}
