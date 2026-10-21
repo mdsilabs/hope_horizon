@@ -164,7 +164,7 @@ export default function PlatformControlPage(){
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {Object.entries(control.counts).map(([name,count])=><div key={name}
             className="rounded-xl border border-slate-200 p-3">
-            <p className="text-xs text-slate-500">{name.replaceAll("_"," ")}</p>
+            <p className="text-xs text-slate-500">{name==="users"?"Non-admin users":name.replaceAll("_"," ")}</p>
             <p className="text-xl font-semibold">{count}</p>
           </div>)}
         </div>
