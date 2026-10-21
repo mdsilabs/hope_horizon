@@ -56,6 +56,10 @@ export default async function ParentChildrenPage(){
                   <p>No published results available for this child yet.</p>}
               </div>
               <div className="flex flex-wrap gap-3">
+                <Link href={`/parent/children/${child.id}`}
+                  className="inline-flex items-center gap-2 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-brand-700 hover:bg-brand-50">
+                  Child profile
+                </Link>
                 <Link href={`/parent/results?childId=${encodeURIComponent(child.id)}`}
                   className="inline-flex items-center gap-2 rounded-xl bg-brand-500 px-4 py-2.5 text-sm font-semibold text-white hover:bg-brand-600">
                   <BookOpen className="h-4 w-4"/> View results
