@@ -6,6 +6,7 @@ import { DashboardShellClient } from "@/components/layout/DashboardShellClient";
 export default async function RoleLayout({ children }: { children: React.ReactNode }) {
   const session = await getCurrentSession();
   if (!session) redirect("/login");
+  if(session.profile.role!=="PARENT") redirect("/");
 
   const supabase = await createClient();
   const { data: school } = await supabase
