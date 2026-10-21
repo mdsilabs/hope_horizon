@@ -41,9 +41,13 @@ a Co-Admin.
 
 1. Back up and restore-test the Supabase database independently.
 2. Apply `0018_installation_pause_controls.sql` if not yet applied.
-3. Apply `0019_primary_admin_and_guarded_operational_reset.sql` **once**.
-   It does not delete operational data, change the pause status or trigger
-   cleanup when installed. It only adds security constraints and guarded RPCs.
+3. Apply `0019_primary_admin_and_guarded_operational_reset.sql` **once**,
+   followed by `0020_preserve_all_admins_on_reset.sql` **once**.
+   Both migrations are non-destructive on installation. **0020 is required**:
+   the web reset endpoint refuses to run against the older 0019 policy.
+   If a legacy reset Auth-cleanup job is pending, migration 0020 stops for
+   manual reconciliation rather than guessing which administrator to delete.
+   Then apply `0021_parent_contact_self_service.sql` for guardian contacts.
 4. Deploy the latest `main` to Vercel.
 5. Sign in as the original PRIMARY Administrator and open
    `/admin/platform-control`. This link is shown only to that user.
@@ -65,14 +69,15 @@ a Co-Admin.
 
 ## Reset **operational data only**
 
-**Preserved:** the original PRIMARY administrator's account and credentials;
+**Preserved:** EVERY administrator's account and credentials, including
+the original PRIMARY and all CO_ADMIN accounts (active or inactive);
 the `schools` row (name, branding, contacts, grade configuration, academic
 structure); Cloudinary/media configuration; Supabase Auth/project keys;
 audit history; the maintenance switch; reset receipts.
 
 **Deleted:** classes, subjects, academic sessions and terms, teaching
 assignments, students, staff/teacher profiles, parents and parent-child links,
-non-Super-Admin application user profiles, marks, results and published
+non-administrator application user profiles, marks, results and published
 report data, requests, release approvals, and school notifications.
 The active academic session and term pointers become NULL because the
 selected records no longer exist. The Super Admin can start fresh setup.
@@ -116,7 +121,7 @@ first on a disposable staging installation with representative data.
   same-origin requests; DB RPCs are granted to service role only.
 - The full reset function refuses any unknown future public tables to
   avoid leaving an unrecognized dataset behind.
-- The Super Admin profile is protected by the existing identity guard, and
+- All ADMIN account profiles are preserved, and
   the database refuses reset unless there is exactly one active PRIMARY.
 - Audit logs are preserved, and user references to deleted accounts are
   nulled where defined by existing schema.
@@ -131,10 +136,43 @@ first on a disposable staging installation with representative data.
 ### Acceptance testing (staging, before production)
 
 - PRIMARY can see owner link; CO_ADMIN, parents and teachers cannot.
-- Primary account stays active and retains the same login after reset.
+- The PRIMARY and every CO_ADMIN account retain their profile, login and tier after reset, including inactive/pending co-admins.
 - All school settings and Cloudinary integration remain.
 - Counts become zero across all operational tables and other schools remain.
 - A count change after preview aborts; an unknown public table aborts.
 - Missing backup evidence or typed confirmation aborts.
 - No school can resume while Auth cleanup is incomplete.
 - Failed Auth deletions are retryable without re-erasing the database.
+
+## Parent portal completion (0021)
+
+- Administrators now have a visible **Parents & Families** sidebar link at
+  `/admin/parents`. They can link multiple active students to one guardian.
+- Parents sign in with their individual guardian account and see **Dashboard**,
+  **My Children**, **Results**, **Notifications** and **Guardian Account**.
+- The dashboard and My Children page include direct, named child profile
+  links. `/parent/children/[id]` lists that child's published historical
+  term results, attendance on approved reports and printable cards.
+- `/parent/results?childId=...` offers a sibling switcher and only retrieves
+  linked, published reports. Unpublished, hidden and unrelated children's
+  records are never returned.
+- `/parent/account` reads the guardian's name and login email from the
+  school-verified profile, and allows self-editing only phone/WhatsApp.
+  The database RPC `hh_parent_update_contact` updates both the matching
+  parent and user contact records atomically with a school/role guard.
+  Guardians cannot self-link children, alter admission numbers, grades or
+  modify any other family's details.
+- Password and login email changes use the existing secure account recovery
+  process; school staff must verify guardian identity before changing links.
+
+### Important status distinctions
+
+Automated unit/CI checks cannot prove that Supabase migrations are present
+on your chosen school instance or that a real guardian can log in and view
+multiple children. First apply the SQL migrations in order to a **separate
+staging Supabase instance**. Validate the following using two households
+with two students each: parent A sees both their children but not parent B's
+children; published results work and withdrawn results disappear; guardian
+phone edits appear on both User and Parent profiles; Co-Admins remain after
+an operational reset; unrelated school data remains unchanged.
+Never test the destructive reset against the production school.
