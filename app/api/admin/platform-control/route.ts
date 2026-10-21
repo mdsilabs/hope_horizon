@@ -26,7 +26,8 @@ export async function GET(){
     // expected by the operational reset. Earlier deployments show the
     // maintenance controls without enabling destructive actions.
     const preview=await admin.rpc("hh_platform_reset_counts",{p_school:session.profile.school_id});
-    const resetReady=!preview.error && !!preview.data;
+    const version=await admin.rpc("hh_platform_reset_policy_version");
+    const resetReady=!preview.error && !!preview.data && !version.error && version.data===2;
     const counts:Record<string,number>=resetReady?preview.data as Record<string,number>:{};
     const job=resetReady?await admin.from("platform_reset_jobs")
       .select("id,status,created_at,initial_account_count,pending_auth_ids")
@@ -40,8 +41,8 @@ export async function GET(){
       resetReady,destructiveResetAvailable:resetReady &&
         process.env.PLATFORM_ENABLE_OPERATIONAL_RESET==="true" &&
         control.data.paused && !pending,
-      resetWarning:!resetReady?"Install guarded operational reset migration 0019 first.":
-        "Operational student/staff data can be erased permanently. Verify an independently restorable backup. School settings, audit history and the original PRIMARY admin remain.",
+      resetWarning:!resetReady?"Apply guarded operational reset migration 0019 and administrator-preservation migration 0020 before enabling deletion.":
+        "Only non-administrator school data and non-administrator logins are deleted. Every PRIMARY and CO_ADMIN remains. A restorable backup is mandatory.",
       latestReset:latest?{id:latest.id,status:latest.status,
         startedAt:latest.created_at,totalAuthAccounts:latest.initial_account_count,
         pendingAuthAccounts:latest.pending_auth_ids.length}:null,
