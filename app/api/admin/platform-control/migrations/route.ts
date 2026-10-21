@@ -10,7 +10,7 @@ export const dynamic="force-dynamic";
 export const maxDuration=60;
 
 const applySchema=z.object({
-  migrationId:z.string().regex(/^00(?:1[5-9]|2[0-1])$/),
+  migrationId:z.string().regex(/^\d{4}$/),
   confirmation:z.string().min(10).max(150),
 }).strict();
 
