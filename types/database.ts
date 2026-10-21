@@ -593,6 +593,7 @@ export interface Database {
     };
     Views: Record<string, never>;
     Functions: {
+      hh_parent_update_contact:{Args:{p_phone:string;p_whatsapp:string};Returns:boolean};
       hh_platform_reset_counts:{Args:{p_school:string};Returns:Record<string,number>};
       hh_platform_reset_policy_version:{Args:Record<string,never>;Returns:number};
       hh_platform_reset_operational:{Args:{p_school:string;p_actor:string;
