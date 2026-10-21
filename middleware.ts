@@ -65,7 +65,7 @@ export async function middleware(request: NextRequest) {
     }
     if(maintenance?.paused){
       const isMaintenanceEntry=pathname==="/system-paused"||
-        pathname==="/admin/platform-control"||
+        (pathname==="/admin/platform-control"||pathname.startsWith("/admin/platform-control/"))||
         pathname.startsWith("/api/admin/platform-control")||
         pathname==="/login"||pathname==="/forgot-password"||
         pathname==="/reset-password"||pathname==="/change-password"||
