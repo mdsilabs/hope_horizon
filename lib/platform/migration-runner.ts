@@ -54,7 +54,15 @@ function getConnectionString(){
   const value=process.env.MIGRATION_DATABASE_URL!.trim();
   if(!migrationProjectMatches(value,getPublicSupabaseConfig().url))
     throw new AppError("Migration database is not the configured school Supabase project.",503,"MIGRATION_PROJECT_MISMATCH");
-  return value;
+  const uri=new URL(value);
+  // pg-connection-string can interpret sslmode independently of the
+  // explicit Client.ssl option. Reject weakening modes and strip the
+  // parameters so the verified TLS settings below always take precedence.
+  const sslMode=uri.searchParams.get("sslmode")?.toLowerCase();
+  if(sslMode&&sslMode!=="require"&&sslMode!=="verify-full")
+    throw new AppError("Migration connection must use verified TLS.",503,"INSECURE_MIGRATION_CONNECTION");
+  for(const key of ["sslmode","sslcert","sslkey","sslrootcert"])uri.searchParams.delete(key);
+  return uri.toString();
 }
 async function connect(){
   const client=new Client({
