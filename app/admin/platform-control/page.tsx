@@ -1,7 +1,7 @@
 "use client";
 import {useEffect,useState} from "react";
 import Link from "next/link";
-import {AlertTriangle,Lock,PauseCircle,PlayCircle,RotateCcw,ShieldCheck} from "lucide-react";
+import {AlertTriangle,Database,Lock,PauseCircle,PlayCircle,RotateCcw,ShieldCheck} from "lucide-react";
 import {Card} from "@/components/ui/Card";
 import {Button} from "@/components/ui/Button";
 
@@ -113,6 +113,10 @@ export default function PlatformControlPage(){
         Co-Admins cannot pause or reset school data.
       </p>
     </div>
+    <Link href="/admin/platform-control/migrations"
+      className="inline-flex items-center gap-2 rounded-xl border border-brand-200 bg-brand-50 px-4 py-3 text-sm font-semibold text-brand-700 hover:bg-brand-100">
+      <Database className="h-5 w-5"/> Database migrations · Review and apply approved updates
+    </Link>
     {error&&<p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-800">{error}</p>}
     {message&&<p role="status" className="rounded-xl bg-green-50 p-3 text-sm text-green-800">{message}</p>}
     {!control?<Card><p className="text-sm text-slate-600">{busy?"Loading platform status…":"Controls not available. Check migration 0018."}</p></Card>:
