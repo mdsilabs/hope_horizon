@@ -594,6 +594,7 @@ export interface Database {
     Views: Record<string, never>;
     Functions: {
       hh_platform_reset_counts:{Args:{p_school:string};Returns:Record<string,number>};
+      hh_platform_reset_policy_version:{Args:Record<string,never>;Returns:number};
       hh_platform_reset_operational:{Args:{p_school:string;p_actor:string;
         p_expected:Record<string,number>;p_confirmation:string;p_backup_reference:string};Returns:string};
       hh_platform_reset_auth_done:{Args:{p_job:string;p_user:string};Returns:{remaining:number}};
