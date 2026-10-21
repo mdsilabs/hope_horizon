@@ -79,7 +79,7 @@ const NAV_BY_ROLE: Record<UserRole, NavItem[]> = {
     { label: "My Children", href: "/parent/children", icon: GraduationCap },
     { label: "Results", href: "/parent/results", icon: ClipboardCheck },
     { label: "Notifications", href: "/parent/notifications", icon: Bell },
-    { label: "My Profile", href: "/profile", icon: UserCircle },
+    { label: "Guardian Account", href: "/parent/account", icon: UserCircle },
   ],
   ACCOUNTANT: [
     { label: "Dashboard", href: "/accountant", icon: LayoutDashboard },
