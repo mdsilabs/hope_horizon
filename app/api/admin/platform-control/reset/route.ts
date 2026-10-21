@@ -37,6 +37,12 @@ export async function POST(request:NextRequest){
       throw new AppError("Pause this installation before resetting operational school data.",409);
     if(school.error||!school.data)throw new AppError("School configuration not found.",503);
 
+    // Fail closed against older reset policy (0019) which deleted CO_ADMIN.
+    // Check on the server for every destructive action, not only the UI.
+    const policy=await admin.rpc("hh_platform_reset_policy_version");
+    if(policy.error||policy.data!==2)
+      throw new AppError("Apply migration 0020 to protect all administrator accounts before resetting or cleaning Auth accounts.",503,"MIGRATION_REQUIRED");
+
     if(input.action==="RESET_OPERATIONAL"){
       // Exact-case confirmation and supplied backup evidence. A free-text
       // reference is an operator attestation, NOT technical backup verification.
@@ -77,7 +83,26 @@ export async function POST(request:NextRequest){
         firstFailure="Original Super Admin appeared in the deletion queue. Cleanup halted.";
         break;
       }
-      const {error:removeError}=await admin.auth.admin.deleteUser(userId);
+      // Defense in depth: never delete any ADMIN profile or account whose
+      // trusted Auth app_metadata declares ADMIN, even with an old queued ID.
+      const {data:profile,error:profileError}=await admin.from("users")
+        .select("role").eq("id",userId).eq("school_id",session.profile.school_id).maybeSingle();
+      if(profileError){
+        firstFailure="Could not verify queued user's administrator status.";break;
+      }
+      if(profile?.role==="ADMIN"){
+        firstFailure="An administrator appeared in the Auth cleanup queue. Cleanup halted.";break;
+      }
+      const {data:account,error:accountError}=await admin.auth.admin.getUserById(userId);
+      if(accountError&&accountError.status!==404){
+        firstFailure="Cannot verify account role in Supabase Auth.";break;
+      }
+      if(account?.user?.app_metadata?.role==="ADMIN"){
+        firstFailure="A protected administrator Auth account was queued. Cleanup halted.";break;
+      }
+      const {error:removeError}=accountError?.status===404
+        ?{error:null}
+        :await admin.auth.admin.deleteUser(userId);
       if(removeError&&removeError.status!==404){
         // Usually: Auth account owns objects in Supabase Storage or a
         // database dependency still needs manual cleanup. Never resume.
