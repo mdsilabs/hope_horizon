@@ -40,6 +40,12 @@ export default async function ParentDashboardPage(){
       <Link href="/parent/results" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
         Published results
       </Link>
+      <Link href="/parent/notifications" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+        Notifications
+      </Link>
+      <Link href="/profile" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+        My contact details
+      </Link>
     </div>
     {!family.children.length?<EmptyState
       title="No children linked"
@@ -49,10 +55,16 @@ export default async function ParentDashboardPage(){
           <h2 className="font-semibold text-slate-900">{child.full_name}</h2>
           <p className="text-sm text-slate-600">{child.classes?.name??"Class"} {child.classes?.arm??""}</p>
           <p className="text-xs text-slate-500">Admission: {child.admission_number}</p>
-          <Link href={`/parent/results?childId=${encodeURIComponent(child.id)}`}
-            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
-            View published results <ArrowRight className="h-4 w-4"/>
-          </Link>
+          <div className="flex flex-wrap gap-3">
+            <Link href={`/parent/children/${child.id}`}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+              Child profile <ArrowRight className="h-4 w-4"/>
+            </Link>
+            <Link href={`/parent/results?childId=${encodeURIComponent(child.id)}`}
+              className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 hover:underline">
+              Published results
+            </Link>
+          </div>
         </Card>)}
       </div>}
   </div>;
