@@ -37,11 +37,29 @@ a DBA must investigate and resolve that legacy ambiguity before reset
 features can be activated. Do not guess the original admin or promote
 a Co-Admin.
 
+## Super Admin-applied database upgrades
+
+After the first administrator account is installed, **the Super Admin applies
+approved schema migrations directly in the portal** under
+`/admin/platform-control/migrations`. This replaces routine Supabase SQL
+Editor instructions for numbered upgrades from 0015 onward. The developer
+must first configure the server-only, project-matched PostgreSQL connection
+as described in [SUPER_ADMIN_DATABASE_MIGRATIONS.md](SUPER_ADMIN_DATABASE_MIGRATIONS.md).
+The panel checks installed versions and runs reviewed migrations in order,
+recording successful applications and auditing the Primary Administrator.
+
+For a fresh school, foundational migrations 0001–0014 and the original
+administrator provisioning remain a one-time developer bootstrap because
+Super Admin authorization does not exist before those tables are installed.
+
 ## Deployment steps
 
 1. Back up and restore-test the Supabase database independently.
-2. Apply `0018_installation_pause_controls.sql` if not yet applied.
-3. Apply `0019_primary_admin_and_guarded_operational_reset.sql` **once**,
+2. From **Super Admin → Database Migrations**, apply
+   `0018_installation_pause_controls.sql` if not yet applied.
+   For an older deployment, configure the private migration connection first.
+3. In that same portal, apply
+   `0019_primary_admin_and_guarded_operational_reset.sql` **once**,
    followed by `0020_preserve_all_admins_on_reset.sql` **once**.
    Both migrations are non-destructive on installation. **0020 is required**:
    the web reset endpoint refuses to run against the older 0019 policy.
