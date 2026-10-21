@@ -1,3 +1,21 @@
+## Super Admin database migrations (2026-10)
+
+After the one-time school schema/first-administrator bootstrap, the original
+**PRIMARY Administrator** now applies all developer-approved schema upgrades
+from the portal at **Super Admin → Database Migrations**:
+`/admin/platform-control/migrations`.
+
+The panel checks what is already installed, enforces version order, verifies
+reviewed SQL file checksums, runs each migration in a transactional and audited
+PostgreSQL operation, and blocks unauthorized Co-Admins. There is **no**
+free-text SQL console. Configure `MIGRATION_DATABASE_URL` and
+`MIGRATION_RUNNER_ENABLED=true` privately in Vercel before using it.
+Use the maintenance pause for later upgrades and test on staging first.
+Foundational migrations 0001–0014 still require a one-time developer bootstrap
+because the Super Admin account does not exist before schema initialization.
+
+See [Super Admin migration operating guide](docs/SUPER_ADMIN_DATABASE_MIGRATIONS.md).
+
 ## Class-wide publication and printable report cards (migration 0011)
 
 Class teachers now enter attendance and teacher remarks for every pupil,
