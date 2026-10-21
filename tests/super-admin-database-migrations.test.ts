@@ -66,7 +66,7 @@ test("Apply is transactional, serialized, audited, ordered and verifiable",()=>{
 });
 test("Migrations shown read-only until apply and pause is required after 0018",()=>{
   assert.match(runner,/if\(maintenanceAvailable\.rows\[0\]\?\.installed&&!await schoolPaused\(client\)\)/);
-  assert.match(screen,/migration\.state==="pending"/.source? /next\.state==="pending"/: /next\.state==="pending"/);
+  assert.match(screen,/next\.state==="pending"/);
   assert.match(screen,/migration-confirmation/);
   assert.match(screen,/schemaDrift/);
   assert.match(screen,/pauseRequired/);
