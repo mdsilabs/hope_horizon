@@ -43,7 +43,7 @@ export default async function ParentDashboardPage(){
       <Link href="/parent/notifications" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
         Notifications
       </Link>
-      <Link href="/profile" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
+      <Link href="/parent/account" className="inline-flex items-center rounded-xl border px-4 py-2.5 text-sm font-semibold text-brand-700 hover:bg-brand-50">
         My contact details
       </Link>
     </div>
