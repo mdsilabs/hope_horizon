@@ -64,3 +64,14 @@ test("Parent sees multiple linked children, selected child must belong to family
   assert.match(sidebar,/href: "\/admin\/parents"/);
   assert.match(sidebar,/href: "\/parent\/account"/);
 });
+
+test("Guardian notifications can be filtered and marked read only for own school/account",()=>{
+  const page=file("app/parent/notifications/page.tsx");
+  assert.match(page,/filter==="unread"/);
+  assert.match(page,/markAllRead/);
+  assert.match(page,/\.eq\("recipient_id",session\.authUserId\)/);
+  assert.match(page,/\.eq\("school_id",session\.profile\.school_id\)/);
+  assert.match(page,/\.eq\("channel","IN_APP"\)/);
+  assert.match(page,/\.is\("read_at",null\)/);
+  assert.match(page,/session\.profile\.role!=="PARENT"/);
+});
