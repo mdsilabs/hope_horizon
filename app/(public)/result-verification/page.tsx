@@ -32,7 +32,7 @@ function VerificationContent() {
   }, [code]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
+    <div className="flex flex-1 items-center justify-center bg-surface-muted px-4 py-8">
       <div className="w-full max-w-md">
         <div className="mb-8 text-center">
           <div className="mx-auto flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500 font-display text-sm font-bold text-white">

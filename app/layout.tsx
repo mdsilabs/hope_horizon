@@ -22,8 +22,14 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className={`${inter.variable} ${sourceSerif.variable}`}>
-      <body className="min-h-screen font-sans">
+      <body className="flex min-h-screen flex-col font-sans print:block print:min-h-0">
         <ToastProvider>{children}</ToastProvider>
+        <footer className="mt-auto border-t border-brand-100 bg-brand-50 px-4 py-4 text-center text-sm leading-6 text-brand-900 print:hidden">
+          Developed By Silabs and Co Technologies Ltd.{" "}
+          <span className="whitespace-nowrap">
+            (<a href="https://silabs.com.ng" className="focus-ring rounded-sm font-medium underline underline-offset-2 hover:text-brand-700">silabs.com.ng</a>)
+          </span>
+        </footer>
       </body>
     </html>
   );

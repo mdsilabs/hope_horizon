@@ -33,9 +33,9 @@ export function DashboardShell({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen">
+    <div className="flex flex-1">
       <Sidebar role={role} schoolName={schoolName} isPlatformOwner={isPlatformOwner}/>
-      <div className="flex min-h-screen flex-1 flex-col">
+      <div className="flex flex-1 flex-col">
         <Topbar
           userName={userName}
           roleLabel={ROLE_LABELS[role]}

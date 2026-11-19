@@ -66,7 +66,7 @@ export default async function PrintableReport({params}:{params:Promise<{id:strin
  const scores=[...result.result_subject_scores].sort((a,b)=>
   (a.subjects?.name||"").localeCompare(b.subjects?.name||""));
  const approver=batch?.head_signature_name||null;
- return <main className="min-h-screen bg-slate-100 px-3 py-8 text-slate-900 print:bg-white print:p-0">
+ return <main className="flex-1 bg-slate-100 px-3 py-8 text-slate-900 print:bg-white print:p-0">
   <div className="mx-auto mb-4 flex max-w-[210mm] flex-wrap items-center justify-between gap-3 print:hidden">
    <Link href={session.profile.role==="STUDENT"?"/student/results":
     session.profile.role==="PARENT"?"/parent/results":session.profile.role==="PRINCIPAL"?"/principal/results":"/admin/results"}
@@ -77,12 +77,12 @@ export default async function PrintableReport({params}:{params:Promise<{id:strin
    {preview&&<div className="mb-5 border-2 border-amber-400 bg-amber-50 p-2 text-center text-sm font-bold text-amber-800 print:border-amber-400">
     PREVIEW ONLY · NOT RELEASED TO FAMILIES
    </div>}
-   <header className="border-b-2 border-slate-900 pb-5 text-center">
+   <header className="border-b-2 border-brand-700 pb-5 text-center">
     <div className="flex items-center justify-center gap-4">
      {school.logo_url&&<img src={school.logo_url} alt="School logo"
        className="h-16 w-16 object-contain"/>}
      <div>
-      <h1 className="font-display text-2xl font-bold uppercase tracking-wide">{school.name}</h1>
+      <h1 className="font-display text-2xl font-bold uppercase tracking-wide text-brand-900">{school.name}</h1>
       {school.address&&<p className="mt-1 text-xs">{school.address}</p>}
       <p className="mt-1 text-xs">{[school.contact_phone,school.contact_email].filter(Boolean).join(" · ")}</p>
      </div>
@@ -99,7 +99,7 @@ export default async function PrintableReport({params}:{params:Promise<{id:strin
    <section className="py-5">
     <h3 className="mb-3 text-sm font-bold uppercase tracking-wide">Academic Performance</h3>
     <table className="w-full border-collapse text-left text-xs sm:text-sm">
-     <thead><tr className="bg-slate-100 print:bg-slate-100">
+     <thead><tr className="bg-brand-50 text-brand-900">
       <th className="border border-slate-300 p-2">Subject</th>
       <th className="border border-slate-300 p-2 text-center">CA</th>
       <th className="border border-slate-300 p-2 text-center">Exam</th>

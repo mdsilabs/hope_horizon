@@ -9,17 +9,17 @@ const config: Config = {
     extend: {
       colors: {
         brand: {
-          50: "#eef4ff",
-          100: "#d9e6ff",
-          200: "#b7d0ff",
-          300: "#8ab0ff",
-          400: "#5a89ff",
-          500: "#3563e9", // primary academic blue
-          600: "#264ac2",
-          700: "#1f3c9b",
-          800: "#1c3379",
-          900: "#1b2d63",
-          950: "#121b3d",
+          50: "#faf5ff",
+          100: "#f3e8ff",
+          200: "#e9d5ff",
+          300: "#d8b4fe",
+          400: "#c084fc",
+          500: "#9333ea",
+          600: "#7e22ce",
+          700: "#6b21a8",
+          800: "#581c87",
+          900: "#49166f",
+          950: "#3b0764",
         },
         accent: {
           500: "#0f9d78", // success / approved green
