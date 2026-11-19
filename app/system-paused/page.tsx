@@ -12,7 +12,7 @@ export default async function SystemPausedPage(){
       .select("paused,notice").eq("id",1).maybeSingle();
     if(data){notice=data.notice;paused=data.paused;}
   }catch{/* Keep neutral fallback when database is temporarily unreachable. */}
-  return <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+  return <main className="flex flex-1 items-center justify-center bg-slate-50 px-4 py-8">
     <div className="w-full max-w-lg rounded-2xl border bg-white p-8 text-center shadow-sm">
       <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-amber-50">
         <PauseCircle className="h-9 w-9 text-amber-700"/>

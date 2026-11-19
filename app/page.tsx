@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/Card";
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-brand-50 to-white">
+    <div className="flex-1 bg-gradient-to-b from-brand-50 to-white">
       <header className="mx-auto flex max-w-6xl items-center justify-between px-6 py-6">
         <div className="flex items-center gap-2.5">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 font-display text-sm font-bold text-white">

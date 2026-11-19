@@ -30,7 +30,7 @@ export default function ChangeTemporaryPasswordPage(){
   }catch(e){setError(e instanceof Error?e.message:"Unable to change password.");}
   finally{setBusy(false);}
  }
- return <main className="flex min-h-screen items-center justify-center bg-surface-muted px-4">
+ return <main className="flex flex-1 items-center justify-center bg-surface-muted px-4 py-8">
   <div className="w-full max-w-md space-y-4 rounded-2xl border border-surface-border bg-white p-6 shadow-card">
    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-500 text-sm font-bold text-white">HH</div>
    <h1 className="font-display text-2xl font-semibold text-slate-900">Set your private password</h1>
